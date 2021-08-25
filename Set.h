@@ -258,7 +258,7 @@ public:
 		{
 			m.GetCapacity(capacity_array);
 		}
-		MatrixMIMO Capacity(capacity_array); 
+		matrix Capacity(capacity_array); 
 	//	Capacity.Show();
 		Capacity.WriteFile(file_name);
 	}
@@ -310,13 +310,13 @@ public:
 	}
 	void GetDistribution(size_t transmitter_set, size_t transmitter_pt, std::string file_out_rect, std::string file_out_polar) // All receivers from a single transmitting point
 	{
-		MatrixMIMO<std::complex<double>> result;
+		Complex_matrix result;
 		bool valid;
 		for (auto m : S)
 		{
 			if (m.Transmitter_Set == transmitter_set && m.Transmitter_Point == transmitter_pt)
 			{
-				valid = MatrixMIMO<std::complex<double>>::GetDistribution(result, m.M,m.Gd,m.Gx,m.Gy, m.Gphi,m.Gtheta, m.GdGphi,m.GetCapacity());
+				valid = matrix<std::complex<double>>::GetDistribution(result, m.M,m.Gd,m.Gx,m.Gy, m.Gphi,m.Gtheta, m.GdGphi,m.GetCapacity());
 			}
 		}
 		cout << " SUCCESSFUL TERMINALS : " << result.Rows_Count << endl;
@@ -681,7 +681,7 @@ public:
 	{
 		size_t m = first_set.size();
 		size_t n = second_set.size();
-		MatrixMIMO<size_t> subset_Indexes;
+		Size_t_matrix subset_Indexes;
 		new_subsets.resize(m * n);
 		size_t k{ 1 };
 		for(size_t i=0;i<m;i++)
@@ -736,20 +736,20 @@ public:
 
 	void GetAverageHSubSet(std::vector<SubSet>& set, string file) // All receivers from a single transmitting point
 	{
-		MatrixMIMO<complex<double>> H;
+		Complex_matrix H;
 		
-		MatrixMIMO<std::complex<double>> result_H;
-		MatrixMIMO<double> result_Q;
-		MatrixMIMO<std::complex<double>> result_GG;
+		Complex_matrix result_H;
+		Double_matrix result_Q;
+		Complex_matrix result_GG;
 		bool valid;
 		for (auto s : set)
 		{
 		//	s.Show();
 			s.GetAverageH_matrix_1();
 		//	H.Show();
-			valid = MatrixMIMO<std::complex<double>>::GetMatrix(result_H, s.AverageH);
-			valid = MatrixMIMO<double>::GetMatrix(result_Q, s.AverageQ);
-			valid = MatrixMIMO<std::complex<double>>::GetMatrix(result_GG, s.AverageGG_Her);
+			valid = matrix<std::complex<double>>::GetMatrix(result_H, s.AverageH);
+			valid = matrix<double>::GetMatrix(result_Q, s.AverageQ);
+			valid = matrix<std::complex<double>>::GetMatrix(result_GG, s.AverageGG_Her);
 		}
 	//	result_H.Show();
 	//	result_Q.Show();
@@ -789,7 +789,7 @@ public:
 	{
 		if (set.size() > 0)
 		{
-			MatrixMIMO<double> subSet;
+			Double_matrix subSet;
 			double mid;
 			std::string units;
 			cout << endl;
@@ -830,7 +830,7 @@ public:
 	{
 		Tools::SetRESULTSFolder(check);
 		std::string file=Tools::RESULTSFolder + Tools::GetTestCase() + "/Capacity_Distance_Only.txt";
-		MatrixMIMO<double> subSet;
+		Double_matrix subSet;
 		std::vector<size_t> Zero_points;
 		double mid;
 		cout << setw(5) << "POINT #" << setw(15) << "RADIAL DISTANCE" << "(METERS)" << setw(12) << " MIMO CAPACITY" << setw(20) << " SISO CAPACITY" << setw(20) << "AVERAGE POWER(W)" << setw(20) << "D(METERS)" << setw(20) << "Phi(RAD)" << setw(20) << "Theta(RAD)" << setw(20) << "R(METERS)" << setw(20) << "GAIN" << endl;
@@ -875,7 +875,7 @@ public:
 	{
 		Tools::SetRESULTSFolder(check);
 		std::string file = Tools::RESULTSFolder + Tools::GetTestCase() + "/Capacity_Distance_Only.txt";
-		MatrixMIMO<double> subSet;
+		Double_matrix subSet;
 		std::vector<size_t> Zero_points;
 		double mid;
 		cout << setw(5) << "POINT #" << setw(15) << "RADIAL DISTANCE" << "(METERS)" << setw(12) << " MIMO CAPACITY" << setw(20) << " SISO CAPACITY" << setw(20) << "AVERAGE POWER(W)" << setw(20) << "D(METERS)" << setw(20) << "Phi(RAD)" << setw(20) << "Theta(RAD)" << setw(20) << "R(METERS)" << setw(20) << "GAIN" << endl;
@@ -920,7 +920,7 @@ public:
 	std::vector<size_t> CreatOneDistanceSubsets(std::vector<size_t> remove_points)
 	{
 		std::string file = Tools::RESULTSFolder + Tools::GetTestCase() + "/Capacity_Distance_Only.txt";
-		MatrixMIMO<double> subSet;
+		Double_matrix subSet;
 		std::vector<size_t> Zero_points;
 		double mid;
 		cout << setw(5) << "POINT #" << setw(15) << "RADIAL DISTANCE" << "(METERS)" << setw(12) << " MIMO CAPACITY" << setw(20) << " SISO CAPACITY" << setw(20) << "AVERAGE POWER(W)" << setw(20) << "D(METERS)" << setw(20) << "Phi(RAD)" << setw(20) << "Theta(RAD)" << setw(20) << "R(METERS)" << setw(20) << "GAIN" << endl;

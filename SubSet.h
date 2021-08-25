@@ -61,12 +61,11 @@ public:
 		TXPt			=0;
 		RXPt			=0;
 	}
-	SubSet(size_t transmitterID,	size_t receiverID,	size_t txPt)//,size_t rxPt)
+	SubSet(size_t transmitterID,	size_t receiverID,	size_t txPt)
 	{
 		TransmitterID	=transmitterID	;
 		ReceiverID		=receiverID		;
 		TXPt				=txPt		;
-	//	RXPt				=rxPt		;
 	}
 	bool SetCriteria(CRITERIA criteria, double min_value, double step)
 	{
@@ -77,10 +76,7 @@ public:
 	}
 	bool AddItem(Set_Line& line)
 	{
-	//	if (line.Transmitter_Set == this->TransmitterID && line.Receiver_Set == this->ReceiverID && line.Transmitter_Point == this->TXPt)// && line.Receiver_Point == RXPt)
-			if (Pick(line)){if (line.IsValid())this->Terminals.push_back(line); return true;}
-	//		else cout << " The Line Doesn't Match the subset criteria " << endl;
-	//	else     cout << " The Line Doesn't belong to the transmitter - receiver configuration " << endl;
+		if (Pick(line)){if (line.IsValid())this->Terminals.push_back(line); return true;}
 		return false;
 	}
 	bool AddItemDirect(Set_Line& line)
@@ -89,7 +85,6 @@ public:
 	}
 	bool Pick(Set_Line& line)
 	{
-	//	if (!line.IsValid())cout << " Not Valid" << endl;
 		for (auto& c : this->Crieteria)if((!line.IsValid()) || (!c.Test(line)))return false;
 		return true;
 	}
@@ -116,20 +111,19 @@ public:
 		if (sample_size > 0) {return capacity_siso / sample_size; }
 		else return 0.0;
 	}
-	MatrixMIMO<std::complex<double>> GetAverageH_matrix_1()
+	Complex_matrix GetAverageH_matrix_1()
 	{
 		float sample_size = static_cast<float>(this->Terminals.size());
-		MatrixMIMO<std::complex<double>> H;
-		MatrixMIMO<std::complex<double>> gg_her;
-		MatrixMIMO<std::complex<double>> GG_Her;
-		MatrixMIMO<double> Q_Mean;
-		MatrixMIMO<double> Q;
+		Complex_matrix H;
+		Complex_matrix gg_her;
+		Complex_matrix GG_Her;
+		Double_matrix Q_Mean;
+		Double_matrix Q;
 		for (auto& t : this->Terminals)
 		{
 			H.Increment(t.M);
 			Q.Increment(t.Q);
 			gg_her = t.M.Transposed_General() * (t.M.Conjugate_General());
-	//		gg_her.Show();
 			GG_Her.Increment(gg_her);
 	//		cout << "*************** GG_HER*****************" << endl;
 	//		GG_Her.Show();
@@ -156,11 +150,11 @@ public:
 	//	AverageGG_Her.Show();
 		return this->AverageH;
 	}
-	MatrixMIMO<std::complex<double>> GetAverageH_matrix_2()
+	Complex_matrix GetAverageH_matrix_2()
 	{
 		float sample_size = static_cast<float>(this->Terminals.size());
-		MatrixMIMO<std::complex<double>> H;
-		MatrixMIMO<double> Q_Mean;
+		Complex_matrix H;
+		Double_matrix Q_Mean;
 		for (auto& t : this->Terminals)
 		{
 			H = H + t.M/t.Q;
@@ -253,7 +247,6 @@ public:
 				cout << " INVALID TERMINAL FOUND " << endl;
 				return false;
 			}
-	//	cout << " ALL TERMINALS ARE VALID";
 		return true;
 	}
 	void Reset()
@@ -287,8 +280,8 @@ public:
 	size_t TXPt								;
 	size_t RXPt								;
 	std::vector<CRITERIAS> Crieteria		;
-	MatrixMIMO<std::complex<double>>AverageH;
-	MatrixMIMO<double>AverageQ				;
-	MatrixMIMO<std::complex<double>>AverageGG_Her;
+	Complex_matrix AverageH					;
+	Double_matrix AverageQ					;
+	Complex_matrix AverageGG_Her			;
 };
 

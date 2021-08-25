@@ -15,9 +15,9 @@
 #include <cmath>
 #include "H_Item.h"
 #include "Ray.h"
-#include "MatrixMIMO.h"
 #include "Set.h"
 #include "Tools.h"
+
 
 using namespace std;
 
@@ -38,7 +38,6 @@ public:
 		std::stringstream converter;
 		Set MIMO_H_MATRIX;
 		//*************************************************************************
-	//	Tools::SetRESULTSFolder(exposure);
 		Tools::Cir_Folder = cir_path;
 		///**************** Get directory that contains the files ***************
 		
@@ -52,7 +51,7 @@ public:
 		cout << " EBERY THING POSITION :" << Position_Power_directory << endl;
 		cout << " STUDY AREA FOLDER    :" << Tools::StudyArea_Folder << endl;
 		///**************** Reading Transmitter Power****************************
-		string file_in_transmitter_power{ Position_Power_directory + "/Transmitter_power.txt" }; //"D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/Transmitter_power.txt" };
+		string file_in_transmitter_power{ Position_Power_directory + "/Transmitter_power.txt" }; 
 		std::ifstream in_transmitter_power{ file_in_transmitter_power };
 		if (!in_transmitter_power)
 		{
@@ -61,7 +60,6 @@ public:
 		}
 		std::vector<string> transmitter_power_file{ std::istream_iterator<string>(in_transmitter_power),std::istream_iterator<string>() };
 		double transmitter_power_watt;
-	//	double transmitter_height;
 		size_t Total_receiver_points;
 		float Carrier_Frequency;
 		float Bandwidth, Spacing, Phi_array;
@@ -72,7 +70,7 @@ public:
 		size_t groups, Centered, Feature;
 		for (auto xx : transmitter_power_file) {
 			if (item == 0) { converter << static_cast<std::string>(xx); converter >> transmitter_power_watt;				converter.clear(); }
-			else if (item == 1)  { converter << static_cast<std::string>(xx); converter >> Tools::Transmitter_height;				converter.clear(); }
+			else if (item == 1)  { converter << static_cast<std::string>(xx); converter >> Tools::Transmitter_height;		converter.clear(); }
 			else if (item == 2)  { converter << static_cast<std::string>(xx); converter >> Total_receiver_points;			converter.clear(); }
 			else if (item == 3)  { converter << static_cast<std::string>(xx); converter >> Carrier_Frequency; 				converter.clear(); }
 			else if (item == 4)  { converter << static_cast<std::string>(xx); converter >> Bandwidth;						converter.clear(); }
@@ -106,7 +104,7 @@ public:
 			cout << " Error with Transmitter Power Value , it sould be > 0" << endl;
 			exit;
 		}
-		MatrixMIMO<float> data_file;
+		Float_matrix data_file;
 		data_file.AddItem(0, 0, 10 * log10(1000 * transmitter_power_watt));
 		data_file.AddItem(0, 1, Tools::Transmitter_height);
 		data_file.AddItem(0, 2, Total_receiver_points);
@@ -159,17 +157,14 @@ public:
 			cout << " PATH TO THE TARGET FOLDER IS :" << dod_path << " DOES NOT EXIST"<<endl;
 		}
 		
-		//************************* APPLY *****************************************
-		//std::vector<RECORD>Rejected;
-		//std::vector<bool>Rejected_brief;
+		//************************* APPLY *********************************************
 		ReadDirection(cir_path, dod_path, DOD_EXIST, transmitter_power_watt, MIMO_H_MATRIX);
 		//************************* END APPLY *****************************************
 				
 		//************** CREATING TERMINALS DATA SET **********************************
 		std::vector<Terminal> Terminal_data_set;
-		//std::vector<Terminal> Terminal_data_set_Expo;
 		//************** READING TERMINALS _POSITIONS FILE*****************************
-		string file_in_teminals_positions{ Position_Power_directory + "/Terminals_positions.txt" };// "D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/Terminals_positions.txt"};
+		string file_in_teminals_positions{ Position_Power_directory + "/Terminals_positions.txt" };
 		std::ifstream in_Terminals_positions{ file_in_teminals_positions };
 		if (!in_Terminals_positions)
 		{

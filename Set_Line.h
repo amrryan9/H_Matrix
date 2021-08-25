@@ -3,7 +3,8 @@
 #include<complex>
 #include<iostream>
 #include<sstream>
-#include"MatrixMIMO.h"
+//#include"matrix.h"
+#include <ToolBox/matrix.h>
 #include"WirelessPower.h"
 #include"Ray.h"
 using namespace std;
@@ -229,9 +230,9 @@ public:
 	{
 		if (this->IsValid())
 		{
-			MatrixMIMO<std::complex<double>> H = this->M;
-			MatrixMIMO<std::complex<double>> H_SISO;
-			MatrixMIMO<std::complex<double>> Power_Matrix;
+			Complex_matrix H = this->M;
+			Complex_matrix H_SISO;
+			Complex_matrix Power_Matrix;
 			for (int i = 0; i < this->M.Rows_Count; i++)Power_Matrix.AddItem(i, i, std::complex<double>(Tools::Transmitter_power, 0));// Power_Matrix.Show();
 			H.Transposed();
 			H_SISO.AddItem(0, 0, H.GetAverage_All_Items());//H.GetItem(0, 0)
@@ -243,11 +244,11 @@ public:
 		
 			
 		
-			MatrixMIMO<std::complex<double>> I_R = H.GetIdentity_Row();
-			MatrixMIMO<std::complex<double>> I_R_SISO = H_SISO.GetIdentity_Row();
-			MatrixMIMO<std::complex<double>> I_C = H.GetIdentity_Column();
-			MatrixMIMO<std::complex<double>> P_T = this->Power.Transmitter_Diagonal();
-			MatrixMIMO<std::complex<double>> P_R = this->Power.Rceiver_Diagonal();	  
+			Complex_matrix I_R = H.GetIdentity_Row();
+			Complex_matrix I_R_SISO = H_SISO.GetIdentity_Row();
+			Complex_matrix I_C = H.GetIdentity_Column();
+			Complex_matrix P_T = this->Power.Transmitter_Diagonal();
+			Complex_matrix P_R = this->Power.Rceiver_Diagonal();
 			
 			////////////// RESULTS_3 ///////////////////
 	//		double SNR = this->Power.Rceiver_Average_Power() / Noise_Power;	// 
@@ -256,9 +257,9 @@ public:
 			////////////// RESULTS_2 ///////////////////
 			double SNR = 1 / Noise_Power;	// this->Power.Rceiver_Average_Power()
 			double SNR_SISO = Tools::Transmitter_power * Transmitter_Elements / Noise_Power; // multiplied by transmitter and receie elements //Receiver_Elements*  //this->Power.Power(0,0) 
-			MatrixMIMO<std::complex<double>> C_3 = (I_R + H * Power_Matrix * H.GetConjugateTransposed() * SNR);//bits/sec/Hz   // * (1 / Transmitter_Elements)
+			Complex_matrix C_3 = (I_R + H * Power_Matrix * H.GetConjugateTransposed() * SNR);//bits/sec/Hz   // * (1 / Transmitter_Elements)
 			/////////////////////////////////////
-			MatrixMIMO<std::complex<double>> C_3_SISO = (I_R_SISO + H_SISO * H_SISO.GetConjugateTransposed() * SNR_SISO );//bits/sec/Hz //* (1 / Transmitter_Elements_SISO)
+			Complex_matrix C_3_SISO = (I_R_SISO + H_SISO * H_SISO.GetConjugateTransposed() * SNR_SISO );//bits/sec/Hz //* (1 / Transmitter_Elements_SISO)
 			this->Capacity = log2(abs(C_3.GetDeterminant())); 
 			this->Capacity_SISO = log2(abs(C_3_SISO.GetDeterminant()));
 		//	this->Capacity_SISO = log2(abs((1 + (SNR_SISO * pow(abs(H.GetItem(0, 0)), 2) / 1.0))));// Transmitter_Elements))));
@@ -348,7 +349,6 @@ public:
 		for (auto p : this->Pathes)
 		{
 		//	p.SHOW();
-			
 		}
 	}
 	void ShowPathes(unsigned tx_ele, unsigned rx_ele)
@@ -479,8 +479,8 @@ public:
 	unsigned  Receiver_Set;
 	unsigned  Transmitter_Point;
 	unsigned  Receiver_Point;
-	MatrixMIMO<std::complex<double>> M;
-	MatrixMIMO<double> Q;
+	Complex_matrix M;
+	Double_matrix Q;
 	POSITION Position;
 	WirelessPower Power;
 	double Capacity;
