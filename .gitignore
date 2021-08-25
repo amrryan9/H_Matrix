@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+# Visula Studio Files
+*.sln
+*.vcxproj
+*.filters
+*.user
