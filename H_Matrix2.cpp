@@ -1,9 +1,9 @@
 // H_Matrix2.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
+// This is The new Branch Modification
 
 #include "File_Processing.h"
 #include "File_Processing_SISO.h"
-#include "MatrixMIMO.h"
 #include <iostream>
 
 int main()
@@ -351,98 +351,6 @@ int main()
 		*/
 
 
-	MatrixMIMO<std::complex<double>> H_SISO;
-	MatrixMIMO<std::complex<double>> HH;
-	H_SISO.AddItem(0, 0, std::complex<double>(1, 1));
-	H_SISO.AddItem(3, 1, std::complex<double>(4, 2));
-	H_SISO.AddItem(2, 6, std::complex<double>(3, 7));
-	
-	MatrixMIMO<double> D;
-	D.AddItem(0, 0, 0.5);
-	D.AddItem(3, 1, 1.5);
-	D.AddItem(2, 6, 2.5);
-	D.AddItem(0, 1, 6.5);
-	D.AddItem(3, 4, 2.5);
-	D.AddItem(3, 0, 22.5);
-	cout << "*******************************" << endl;
-	(H_SISO * (H_SISO.GetConjugateTransposed()) * H_SISO).Show();
-	cout << "*******************************" << endl;
-	cout <<" Average = "<< H_SISO.GetAverage_All_Items() << endl;
-	cout << " Average = " << (H_SISO * (H_SISO.GetConjugateTransposed()) * H_SISO).GetAverage_All_Items() << endl;
-	cout << " Conjegate = " << std::conj((H_SISO * (H_SISO.GetConjugateTransposed()) * H_SISO).GetAverage_All_Items()) << endl;
-	HH.AddItem(0, 0, (H_SISO * (H_SISO.GetConjugateTransposed()) * H_SISO).GetAverage_All_Items());
-	cout << " Conjegate = ";
-	HH.GetConjugateTransposed().Show();
-	cout << "*******************************" << endl;
-
-	H_SISO.Show();
-//	D.Show();
-//	(H_SISO/5.0).Show();
-//	(H_SISO).Show();
-//	(H_SISO).SwapRows(0, 3);
-//	(H_SISO).Show();
-//	H_SISO.SortOnColumn(1);
-//	(H_SISO).Show();
-	H_SISO.MakeTidyOnReferenceColumn(1);
-	(H_SISO).Show();
-//	D.Show();
-//	D.SwapRows(0, 3);
-//	D.Show(); 
-//	D.SortOnColumn(0);
-	D.Show();
-	D.MakeTidyOnReferenceColumn(1);
-	D.Show();
-	H_SISO.Show();
-///	H_SISO.SortOnColumn(0);
-//	H_SISO.Show();
-
-	MatrixMIMO<std::complex<double>> H,G;
-//	H_SISO.Show();
-//	H.Show() ;
-	
-	H.Increment(H_SISO);// .Show();
-//	H.Show();
-	H.Increment(H_SISO);// .Show();
-//	H.Show();
-	H.Increment(H_SISO);// .Show();
-//	H.Show();
-	MatrixMIMO<std::complex<double>> HHH;
-	for (int i = 0; i < 2; i++)
-	{
-		for (int j = 0; j < 2; j=j+2)
-		{
-			HHH.AddItem(i, 0, complex < double>( (i + j % 5)/10, i + j % 5));
-		}
-		for (int j = 0; j < 2; j = j + 2)
-		{
-			HHH.AddItem(i+20, 0, complex < double>((i + j % 5)/10, i + j % 5));
-		}
-	}
-	HHH.Show();
-	HHH.MakeTidyOnReferenceColumn(0);
-	HHH.Show();
-	double ff = 12.517e-1;
-	cout << Tools::Round(ff, 2) << endl;
-	MatrixMIMO<std::complex<double>> result_H;
-	MatrixMIMO<std::complex<double>>::GetMatrix(result_H, H);
-
-//	result_H.Show();
-
-//	H_SISO.Reset();
-//	H_SISO.Show();
-//	H.Transposed_General().Show();
-//	(H.Transposed_General() * H.Transposed_General().Conjugate_General()).Show();
-//	(H.Conjugate_General() * H.Transposed_General()).Show();
-//	H.Transposed_General().Show();
-//	H.Show();
-//	(H * H.GetConjugateTransposed()).Show();
-//	(H * ((H.Conjugate_General()).Transposed_General())).Show();
-	//H.Show();
-//	G = H.Transposed_General();//G.Show();
-//	G.GetConjugateTransposed().Show();
-//	H.Conjugate_General().Show();
-//	G.Show();
-//	H.Show();
 	system("pause");
 	return 0;
 }
