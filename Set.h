@@ -311,12 +311,21 @@ public:
 	void GetDistribution(size_t transmitter_set, size_t transmitter_pt, std::string file_out_rect, std::string file_out_polar) // All receivers from a single transmitting point
 	{
 		Complex_matrix result;
-		bool valid;
+		//bool valid;
+		Float_vector angles_and_capacity;
 		for (auto m : S)
 		{
 			if (m.Transmitter_Set == transmitter_set && m.Transmitter_Point == transmitter_pt)
 			{
-				valid = matrix<std::complex<double>>::GetDistribution(result, m.M,m.Gd,m.Gx,m.Gy, m.Gphi,m.Gtheta, m.GdGphi,m.GetCapacity());
+				angles_and_capacity.clear();
+				angles_and_capacity.push_back(static_cast<float>(m.Gd));
+				angles_and_capacity.push_back(static_cast<float>(m.Gx));
+				angles_and_capacity.push_back(static_cast<float>(m.Gy));
+				angles_and_capacity.push_back(static_cast<float>(m.Gphi));
+				angles_and_capacity.push_back(static_cast<float>(m.Gtheta));
+				angles_and_capacity.push_back(static_cast<float>(m.GdGphi));
+				angles_and_capacity.push_back(static_cast<float>(m.GetCapacity()));
+				AppendToTable<Complex,float>(result, m.M, angles_and_capacity);
 			}
 		}
 		cout << " SUCCESSFUL TERMINALS : " << result.Rows_Count << endl;
@@ -741,15 +750,15 @@ public:
 		Complex_matrix result_H;
 		Double_matrix result_Q;
 		Complex_matrix result_GG;
-		bool valid;
+		//bool valid;
 		for (auto s : set)
 		{
 		//	s.Show();
 			s.GetAverageH_matrix_1();
 		//	H.Show();
-			valid = matrix<std::complex<double>>::GetMatrix(result_H, s.AverageH);
-			valid = matrix<double>::GetMatrix(result_Q, s.AverageQ);
-			valid = matrix<std::complex<double>>::GetMatrix(result_GG, s.AverageGG_Her);
+			matrix<std::complex<double>>::AppendToTable(result_H, s.AverageH);
+			matrix<double>::AppendToTable(result_Q, s.AverageQ);
+			matrix<std::complex<double>>::AppendToTable(result_GG, s.AverageGG_Her);
 		}
 	//	result_H.Show();
 	//	result_Q.Show();

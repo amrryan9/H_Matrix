@@ -218,6 +218,6 @@ public:
 	double Arrival_Time; // Time in seconds
 	Direction Arrival;
 	Direction Departure;
-	std::complex<double> Voltage_Value;
+	Complex Voltage_Value;
 };
 
