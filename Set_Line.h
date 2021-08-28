@@ -58,6 +58,13 @@ struct POSITION {
 };
 struct PATHS
 {
+	PATHS()
+	{
+		TX_ELEMENT = 0;
+		RX_ELEMENT = 0;
+		KEY = "";
+		EXPO = NLOS;
+	}
 	PATHS(unsigned tx_ele,unsigned rx_ele)
 	{
 		TX_ELEMENT= tx_ele;
@@ -234,7 +241,7 @@ public:
 			Complex_matrix Power_Matrix;
 			for (int i = 0; i < this->M.Rows_Count; i++)Power_Matrix.AddItem(i, i, std::complex<double>(Tools::Transmitter_power, 0));// Power_Matrix.Show();
 			H.Transposed();
-			H_SISO.AddItem(0, 0, H.GetAverage_All_Items());//H.GetItem(0, 0)
+			H_SISO.AddItem(0, 0, H.Average_All_Items());//H.GetItem(0, 0)
 			double Noise_Power = Tools::NoisePower; // Watt , for 300 K  put it -114 dbm 
 			double Receiver_Elements = static_cast<double>(this->M.Columns_Count);
 			double Transmitter_Elements = static_cast<double>(this->M.Rows_Count);
@@ -243,24 +250,24 @@ public:
 		
 			
 		
-			Complex_matrix I_R = H.GetIdentity_Row();
-			Complex_matrix I_R_SISO = H_SISO.GetIdentity_Row();
-			Complex_matrix I_C = H.GetIdentity_Column();
+			Complex_matrix I_R = H.Identity_Row();
+			Complex_matrix I_R_SISO = H_SISO.Identity_Row();
+			Complex_matrix I_C = H.Identity_Column();
 			Complex_matrix P_T = this->Power.Transmitter_Diagonal();
 			Complex_matrix P_R = this->Power.Rceiver_Diagonal();
 			
 			////////////// RESULTS_3 ///////////////////
 	//		double SNR = this->Power.Rceiver_Average_Power() / Noise_Power;	// 
 	//		double SNR_SISO = this->Power.Power(0, 0) * Transmitter_Elements / Noise_Power; // multiplied by transmitter and receie elements //Receiver_Elements*  //
-	//		MatrixMIMO<std::complex<double>> C_3 = (I_R + H *  H.GetConjugateTransposed() * SNR * (1 / Transmitter_Elements));//bits/sec/Hz   // //Power_Matrix *
+	//		Complex_matrix C_3 = (I_R + H *  H.GetConjugateTransposed() * SNR * (1 / Transmitter_Elements));//bits/sec/Hz   // //Power_Matrix *
 			////////////// RESULTS_2 ///////////////////
 			double SNR = 1 / Noise_Power;	// this->Power.Rceiver_Average_Power()
 			double SNR_SISO = Tools::Transmitter_power * Transmitter_Elements / Noise_Power; // multiplied by transmitter and receie elements //Receiver_Elements*  //this->Power.Power(0,0) 
-			Complex_matrix C_3 = (I_R + H * Power_Matrix * H.GetConjugateTransposed() * SNR);//bits/sec/Hz   // * (1 / Transmitter_Elements)
+			Complex_matrix C_3 = (I_R + H * Power_Matrix * H.ConjugateTransposed() * SNR);//bits/sec/Hz   // * (1 / Transmitter_Elements)
 			/////////////////////////////////////
-			Complex_matrix C_3_SISO = (I_R_SISO + H_SISO * H_SISO.GetConjugateTransposed() * SNR_SISO );//bits/sec/Hz //* (1 / Transmitter_Elements_SISO)
-			this->Capacity = log2(abs(C_3.GetDeterminant())); 
-			this->Capacity_SISO = log2(abs(C_3_SISO.GetDeterminant()));
+			Complex_matrix C_3_SISO = (I_R_SISO + H_SISO * H_SISO.ConjugateTransposed() * SNR_SISO );//bits/sec/Hz //* (1 / Transmitter_Elements_SISO)
+			this->Capacity = log2(abs(C_3.Determinant())); 
+			this->Capacity_SISO = log2(abs(C_3_SISO.Determinant()));
 		//	this->Capacity_SISO = log2(abs((1 + (SNR_SISO * pow(abs(H.GetItem(0, 0)), 2) / 1.0))));// Transmitter_Elements))));
 			// Write into a file
 			this->Capacity_Set_Flag = true;
@@ -288,8 +295,9 @@ public:
 	{
 		if (!Capacity_Set_Flag)SetCapacity();
 		 return this->Capacity_SISO;
-	}  
-	bool GetPathes(unsigned  t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned tx_ele, unsigned rx_ele, std::vector<Ray>* p_rays)
+	}
+	/*
+	PATHS* GetPathes(unsigned  t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned tx_ele, unsigned rx_ele)
 	{
 		vector<Ray> Nothing;
 		if (this->Transmitter_Set == t_set)
@@ -297,16 +305,30 @@ public:
 				if (this->Receiver_Set == r_set)
 					if (this->Receiver_Point == r_point)
 					{
-						for (auto p : this->Pathes)
+						for (auto& p : this->Pathes)
 						{
 							if (p.FOUND(tx_ele, rx_ele)) {
 								cout << " PATHES ATTACHED to TX_ELE: "<<tx_ele<<" and RX_ELE: "<<rx_ele<<" ARE FOUND " << endl;
-								p_rays = &(p.RAYS);
-								return true;
+								return (&p);
 							}
 						}
 					}
-		return false;
+		return nullptr;
+	}
+	*/
+	PATHS& GetPathes(unsigned tx_ele, unsigned rx_ele)
+	{
+		PATHS Nothing;
+		for (auto& p : this->Pathes)
+		{
+			if (p.FOUND(tx_ele, rx_ele)) {
+			//	cout << " PATHES ATTACHED to TX_ELE: " << tx_ele<< " and RX_ELE: " << rx_ele << " ARE FOUND " << endl;
+			//	p.SHOWPATH();
+				return (p);
+			}
+		}
+		cout << " PATHES ATTACHED to TX_ELE: " << tx_ele << " and RX_ELE: " << rx_ele << " ARE NOT FOUND " << endl;
+		return Nothing;
 	}
 	double GetPower()
 	{
@@ -341,13 +363,13 @@ public:
 	}
 	void ShowValid()
 	{
-		if (M.IsValid())this->Show();
+		//if (M.IsValid())this->Show();
 	}
 	void ShowPathes()
 	{
 		for (auto p : this->Pathes)
 		{
-		//	p.SHOW();
+			p.SHOW();
 		}
 	}
 	void ShowPathes(unsigned tx_ele, unsigned rx_ele)
@@ -375,7 +397,7 @@ public:
 	}
 	bool IsValid()
 	{
-		return this->M.IsValid();
+		return true;// this->M.IsValid();
 	}
 	void SetGd(size_t group)
 	{

@@ -53,6 +53,7 @@ public:
 	Set()
 	{
 	}
+	/*
 	bool AddItem(std::vector<Ray> pathes,unsigned t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned r, unsigned c, std::complex<double> x)
 	{
 		Set_Line l(t_set, r_set, t_point, r_point);
@@ -85,38 +86,47 @@ public:
 		}
 		return false;
 	}
+	*/
 	Set_Line* AddItem(const std::vector<Ray>& pathes,unsigned t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned r, unsigned c, std::complex<double> x,double total_power)
 	{
-		Set_Line l(t_set,r_set,t_point,r_point);
+		
+		for (auto& entry : this->S)
 		{
-			for (auto& entry : this->S)
+			if (entry.Transmitter_Set == t_set)
 			{
-				if (entry.Transmitter_Set == t_set)
+		//		cout << " Match found # 1" << endl;
+				if (entry.Receiver_Set == r_set)
 				{
-					if (entry.Receiver_Set == r_set)
+		//			cout << " Match found # 2" << endl;
+					if (entry.Transmitter_Point == t_point)
 					{
-						if (entry.Transmitter_Point == t_point)
+		//				cout << " Match found # 3" << endl;
+						if (entry.Receiver_Point == r_point)
 						{
-							if (entry.Receiver_Point == r_point)
-							{
-								entry.M.AddItem(r, c, x);
-								entry.Q.AddItem(r, c, pathes.size());
-								entry.Power.AddItem(r, c, total_power, -arg(x));
-								entry.SetPathes(t_set, r_set,t_point, r_point, r+1, c+1, pathes);
-								return &entry;
-							}
+		//					cout << " Match found # 4" << endl;
+							entry.M.AddItem(r, c, x);
+							entry.Q.AddItem(r, c, pathes.size());
+							entry.Power.AddItem(r, c, total_power, -arg(x));
+							entry.SetPathes(t_set, r_set, t_point, r_point, r + 1, c + 1, pathes);
+							return &entry;
 						}
+		//				else cout << " ITEM ADD ERROR #4 " << endl;
 					}
+		//			else cout << " ITEM ADD ERROR #3 " << endl;
 				}
+		//		else cout << " ITEM ADD ERROR #2 " << endl;
 			}
-			l.M.AddItem(r, c, x);
-			l.Q.AddItem(r, c, pathes.size());
-			l.Power.AddItem(r, c, total_power, -arg(x));
-			l.SetPathes(t_set, r_set, t_point, r_point, r+1, c+1, pathes);
-			this->S.push_back(l);
+		//	else cout << " ITEM ADD ERROR #1 " << endl;
 		}
-		return &l;
+		Set_Line* l = new Set_Line(t_set, r_set, t_point, r_point);
+		l->M.AddItem(r, c, x);
+		l->Q.AddItem(r, c, pathes.size());
+		l->Power.AddItem(r, c, total_power, -arg(x));
+		l->SetPathes(t_set, r_set, t_point, r_point, r+1, c+1, pathes);
+		this->S.push_back(*l);
+		return l;
 	}
+	/*
 	bool AddItem(std::vector<Ray> pathes,unsigned t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned r, unsigned c, std::complex<double> x, double total_power, double total_power_phase)
 	{
 		Set_Line l(t_set, r_set, t_point, r_point);
@@ -151,6 +161,7 @@ public:
 		}
 		return false;
 	}
+	*/
 	void AddItemPower(unsigned t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned r, unsigned c, double total_power, double power_phase)
 	{
 		std::string key;
@@ -164,6 +175,65 @@ public:
 				l.Power.AddItem(r, c, total_power, power_phase);
 			}
 		}
+	}
+	bool UpdateItem(std::vector<Ray> pathes_angles, unsigned t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned r, unsigned c)
+	{
+		//Update rays with angles 
+		//Get Ray 
+		//this->GetPathes(t_set, r_set, t_point, r_point, r, c).SHOWPATH();
+		
+		PATHS& P = (this->GetPathes(t_set, r_set, t_point, r_point, r, c));
+	//	cout << "******************************** UPDATING *********************************" << endl;
+	//	cout << " Transmitter set : " << t_set << endl;
+	//	cout << " Receiver set    : " << r_set << endl;
+	//	cout << " Transmitter point : " << t_point << endl;
+	//	cout << " Receiver point : " << r_point << endl;
+	//	cout << " Transmitter ele : " << r << endl;
+	//	cout << " Receiver ele : " << c << endl;
+	//	P.SHOWPATH();
+	//	cout << " ******************************* FINISH UPDATING ***************************" << endl;
+
+		
+	//	if (P != nullptr)
+	//	{
+			//Check if it is the same 
+			unsigned i = 0;
+			if (pathes_angles.size() == P.RAYS.size())
+			{
+				for (auto& ray : pathes_angles)
+				{
+					if (i < P.RAYS.size())
+					{
+						if (ray.CheckTheSameRay(P.RAYS.at(i)))
+						{
+							//Update
+							P.RAYS.at(i).SetArrival(ray.Arrival.Theta, ray.Arrival.Phi);
+							P.RAYS.at(i).SetDeparture(ray.Departure.Theta, ray.Departure.Phi);
+							i++;
+						}
+						else
+						{
+							cout << " MISMATCH #1" << endl;
+							return false;
+						}
+					}
+					else
+					{
+						cout << " MISMATCH #2" << endl;
+						return false;
+					}
+				}
+			}
+			else
+			{
+				cout << " MISMATCH #3" << endl;
+				cout << " CIR Pathes count : " << P.RAYS.size() << endl;
+				cout << " DOD Pathes count : " << pathes_angles.size() << endl;
+				return false;
+			}
+	//	}
+	//		cout << " ************* PINGO *******************************" << endl;
+		return true;
 	}
 	void AddTopologyItem(unsigned t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned t_element, unsigned r_element)
 	{
@@ -269,6 +339,7 @@ public:
 			s.SetExposure();
 		}
 	}
+	/*
 	void UpdateDirections(std::vector<Set_Line>& s_dod)
 	{
 		std::vector<Ray>* p_Rays = nullptr;
@@ -298,6 +369,7 @@ public:
 		}
 		   
 	}
+	*/
 	size_t GetSize()
 	{
 		if (this->S.size() == this->Receivers.size())
@@ -336,17 +408,18 @@ public:
 	{
 		GetDistribution(1, 1, Tools::RESULTSFolder + Tools::GetTestCase() + "/test_polar.txt", Tools::RESULTSFolder + Tools::GetTestCase() + "/test_rect.txt");
 	}
-	bool GetPathes(unsigned  t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned tx_ele, unsigned rx_ele, std::vector<Ray>* p_Rays)
+	PATHS& GetPathes(unsigned  t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned tx_ele, unsigned rx_ele)
 	{
-		for (auto l : this->S)
+		PATHS Nothing;
+		for (auto& l : this->S)
 		{
-			if (l.GetPathes(t_set, r_set, t_point, r_point, tx_ele, rx_ele, p_Rays))
+			if (l.Transmitter_Set == t_set && l.Receiver_Set==r_set && l.Transmitter_Point==t_point && l.Receiver_Point==r_point)
 			{
-				return true;
+				return l.GetPathes(tx_ele, rx_ele);
 			}
 		}
-	//	cout << " PATHES ARE NOT FOUND !!!!!!!!!!" << endl;
-		return false;
+		cout << " PATHES ARE NOT FOUND !!!!!!!!!!" << endl;
+		return Nothing;
 	}
 	bool GetPathes(std::string key, std::vector<Ray>* p_Rays)
 	{
@@ -361,7 +434,7 @@ public:
 				}
 			}
 		}
-		//	cout << " PATHES ARE NOT FOUND !!!!!!!!!!" << endl;
+		cout << " PATHES ARE NOT FOUND !!!!!!!!!!" << endl;
 		return false;
 	}
 	Set GetEXPO(EXPOSURE check)
@@ -518,7 +591,7 @@ public:
 		}
 		cout << " Number of Terminals :" << S_size << endl;
 	}
-	void Permutate()
+	void PermutateBack()
 	{
 		std::vector<Set_Line> SP;
 		size_t S_size = S.size();
@@ -601,6 +674,17 @@ public:
 		//			if (s.Receiver_Set == r_set)
 						if (s.Receiver_Point == r_point)
 							s.ShowPathes(tx_ele, rx_ele);
+		}
+	}
+	void ShowPathes()
+	{
+		for (auto& l : this->S)
+		{
+			cout << endl;
+			for (auto& p : l.Pathes)
+				p.SHOWPATH();
+			cout << endl;
+			cout << "*************************************************" << endl;
 		}
 	}
 	void ShowAllPathes(unsigned  t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point)

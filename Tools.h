@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <matrix.h>
 
 using namespace std;
 
@@ -405,13 +406,13 @@ public:
 		switch (check)
 		{
 		case LOS:
-			Tools::RESULTSFolder = "D:/RESULTS_2/LOS/";//"D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/RESULTS/LOS/";
+			Tools::RESULTSFolder = "D:/RESULTS_5/LOS/";//"D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/RESULTS/LOS/";
 			break;
 		case NLOS:
-			Tools::RESULTSFolder = "D:/RESULTS_2/NLOS/";//"D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/RESULTS/NLOS/";
+			Tools::RESULTSFolder = "D:/RESULTS_5/NLOS/";//"D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/RESULTS/NLOS/";
 			break;
 		case ALL:
-			Tools::RESULTSFolder = "D:/RESULTS_2/ALL/";
+			Tools::RESULTSFolder = "D:/RESULTS_5/ALL/";
 			break;
 		}
 	}
@@ -437,5 +438,6 @@ public:
 		static version WirelessInsiteVersion_DOD;
 		static std::filesystem::path Cir_Folder;
 		static std::filesystem::path StudyArea_Folder;
+		static Float_matrix data_file;
 };
 

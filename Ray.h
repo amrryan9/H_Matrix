@@ -5,6 +5,7 @@
 #include<math.h>
 #include <functional> 
 #include"Tools.h"
+#include<matrix.h>
 using namespace std;
 struct Direction
 {
@@ -76,10 +77,21 @@ public:
 		Departure.Theta = departure_theta;
 		Departure.Phi = departure_phi;
 	}
-	Ray(unsigned int path_id, unsigned int source_id, double Arrival_Phi, double Arrival_Theta, double Departure_Phi, double Departure_Theta)
+	Ray(unsigned path_id, unsigned source_id, double power, double phase, double arrival_time, double Arrival_Phi, double Arrival_Theta, double Departure_Phi, double Departure_Theta)
+	{
+		Path_ID = path_id;
+		Source_ID = source_id;
+		Power = power; // Power magnitude in Watts
+		Phase = phase; // Phase Angle in rad of the voltage value , NOT power
+		Arrival_Time = arrival_time; // Time in seconds
+		Voltage_Value = complex(sqrt(power) * cos(phase), sqrt(power) * sin(phase));
+		this->SetArrival(Arrival_Theta, Arrival_Phi);
+		this->SetDeparture(Departure_Theta, Departure_Phi);
+	}
+	Ray(unsigned int path_id, unsigned int source_id, double Arrival_Phi, double Arrival_Theta, double Departure_Phi, double Departure_Theta, double power)
 	{
 		Ray(0, 0, 0, 0, 0);
-		SetDirections(path_id, source_id, Arrival_Phi, Arrival_Theta, Departure_Phi, Departure_Theta);
+		SetDirections(path_id, source_id, Arrival_Phi, Arrival_Theta, Departure_Phi, Departure_Theta,power);
 
 	}
 	Ray operator+(const Ray rhs)
@@ -118,19 +130,22 @@ public:
 	{
 		this->Departure.Set(theta, phi);
 	}
-	bool SetDirections(unsigned int path_id, unsigned int source_id, double Arrival_Phi, double Arrival_Theta, double Departure_Phi, double Departure_Theta)
+	bool SetDirections(unsigned int path_id, unsigned int source_id, double Arrival_Phi, double Arrival_Theta, double Departure_Phi, double Departure_Theta, double power)
 	{
-	//	if (this->Source_ID== source_id  && this->Path_ID==path_id)
+		this->SetArrival(Arrival_Theta, Arrival_Phi);
+		this->SetDeparture(Departure_Theta, Departure_Phi);
+		this->Power = power;
+		return true;
+	}
+	bool CheckTheSameRay(Ray r)
+	{
+		if (this->Path_ID == r.Path_ID && this->Source_ID == r.Source_ID && this->Power == r.Power)
 		{
-			this->SetArrival(Arrival_Theta, Arrival_Phi);
-			this->SetDeparture(Departure_Theta, Departure_Phi);
 			return true;
+		//	cout << " Rays match " << endl;
 		}
-//		else
-		{
-		//	cout << " Path id mismatch " << this->Source_ID << " But given: " << source_id << endl;
-	//		return false;
-		}
+		cout << " Rays don't match " << endl;
+		return false;
 	}
 	void Set(double power, double phase, double arrival_time)
 	{

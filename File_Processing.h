@@ -33,10 +33,87 @@ public:
 		i++;
 		return (Tools::Permute(i, s)) - 1;
 	}
-	inline Set read_directory(const std::string& cir_path)// , EXPOSURE exposure)
+	void Write_Test_Data(const std::string& file_path)
+	{
+		//***************** Creat The file directories if don't exist ********
+		std::filesystem::path case_path = file_path; //Tools::RESULTSFolder + Tools::GetTestCase();
+		if (std::filesystem::create_directories(case_path))
+		{
+			cout << case_path.string() << " EXISTS " << endl;
+			Tools::data_file.WriteFile(Tools::RESULTSFolder + Tools::GetTestCase() + "/Capacity_Test_Data.txt");
+		}
+		else
+		{
+			cout << case_path.string() << "Already EXISTS " << endl;
+			Tools::data_file.WriteFile(Tools::RESULTSFolder + Tools::GetTestCase() + "/Capacity_Test_Data.txt");
+			//	exit(1);
+		}
+	}
+	bool CheckIfFolderExist(const std::string& folder_path)
+	{
+		//***************** Check if the folder exists **************************
+		if (std::filesystem::exists(folder_path)) {
+			cout << " PATH TO THE TARGET FOLDER IS :" << folder_path << endl;
+		}
+		else
+		{
+			cout << " PATH TO THE TARGET FOLDER IS :" << folder_path << " DOES NOT EXIST" << endl;
+			return false;
+		}
+		return true;
+	}
+	std::vector<Terminal> GetPositionDataSet(std::string file_in_teminals_positions)
 	{
 		std::stringstream converter;
-		Set MIMO_H_MATRIX;
+		std::vector<Terminal> Terminal_data_set;
+		std::ifstream in_Terminals_positions{ file_in_teminals_positions };
+		if (!in_Terminals_positions)
+		{
+			std::cerr << " Terminals_Positions file is not open." << std::endl;
+			exit(1);
+		}
+		std::vector<string> Terminals_positions_file{ std::istream_iterator<string>(in_Terminals_positions),std::istream_iterator<string>() };
+		size_t i_Terminals_positions = 0;
+		float Distance;
+		float Height;
+		float Phi;
+		float Theta;
+		float R;
+		for (auto xx : Terminals_positions_file)
+		{
+			if (i_Terminals_positions % 5 == 0) { converter << static_cast<std::string>(xx); converter >> Distance;	converter.clear(); }
+			else if (i_Terminals_positions % 5 == 1) { converter << static_cast<std::string>(xx); converter >> Height;	converter.clear(); }
+			else if (i_Terminals_positions % 5 == 2) { converter << static_cast<std::string>(xx); converter >> Phi;		converter.clear(); }
+			else if (i_Terminals_positions % 5 == 3) { converter << static_cast<std::string>(xx); converter >> Theta;		converter.clear(); }
+			else if (i_Terminals_positions % 5 == 4) { converter << static_cast<std::string>(xx); converter >> R;			converter.clear(); }
+			i_Terminals_positions++;
+
+			// Adding to the terminals data set //////////////////////////////////
+			if (i_Terminals_positions > 0 && i_Terminals_positions % 5 == 0)Terminal_data_set.push_back(Terminal(Distance, Height, Phi, Theta, R));
+			//////////////////////////////////////////////////////////////////////	
+		}
+		in_Terminals_positions.close();
+		cout << " Total Number of Lines :" << i_Terminals_positions / 5 << endl;
+		return Terminal_data_set;
+	}
+	void CreateResultsFolder(std::string file_in_teminals_positions, std::string file_in_transmitter_power)
+	{
+		std::array< EXPOSURE, 3>Expo = { LOS,NLOS,ALL };
+		for (EXPOSURE exposure : Expo)
+		{
+			Tools::SetRESULTSFolder(exposure);
+		//	cout << file_in_teminals_positions << endl; cout << Tools::RESULTSFolder + Tools::GetTestCase() + "/Terminals_positions.txt" << endl;
+			std::filesystem::create_directory(Tools::RESULTSFolder + Tools::GetTestCase());
+			//**********COPYING TERMINALS POSITION FILE TO RESULTS FOLDER ****************************
+			std::filesystem::copy_file(file_in_teminals_positions, Tools::RESULTSFolder + Tools::GetTestCase() + "/Terminals_positions.txt", filesystem::copy_options::overwrite_existing);
+			//**********COPYING TRANSMITTER POWER FILE TO RESULTS FOLDER ****************************
+			std::filesystem::copy_file(file_in_transmitter_power, Tools::RESULTSFolder + Tools::GetTestCase() + "/Transmitter_power.txt", filesystem::copy_options::overwrite_existing);
+			//**********WORKS ONLY FOR 1 TRANSMITTER AND BUNCH OF RECEIVERS***************************
+		}
+	}
+	inline Set read_directory(const std::string& cir_path)
+	{
+		std::stringstream converter;
 		//*************************************************************************
 		Tools::Cir_Folder = cir_path;
 		///**************** Get directory that contains the files ***************
@@ -104,108 +181,49 @@ public:
 			cout << " Error with Transmitter Power Value , it sould be > 0" << endl;
 			exit;
 		}
-		Float_matrix data_file;
-		data_file.AddItem(0, 0, 10 * log10(1000 * transmitter_power_watt));
-		data_file.AddItem(0, 1, Tools::Transmitter_height);
-		data_file.AddItem(0, 2, Total_receiver_points);
-		data_file.AddItem(0, 3, Carrier_Frequency);
-		data_file.AddItem(0, 4, Bandwidth);
-		data_file.AddItem(0, 5, Spacing);
-		data_file.AddItem(0, 6, Tools::CalculateNoisePower(Bandwidth));
-		data_file.AddItem(0, 7, Tools::Samples_Count = static_cast<double>(Samples_Count));
-		data_file.AddItem(0, 8, static_cast<double>(Transmitter_Elements_Count));
-		data_file.AddItem(0, 9, static_cast<double>(Receiver_Elements_Count));
-		data_file.AddItem(0, 10, Tools::Test_Case = Case);
-		data_file.AddItem(0, 11, static_cast<double>(groups));
-		data_file.AddItem(0, 12, static_cast<double>(Centered));
-		data_file.AddItem(0, 13, static_cast<double>(Feature));
-	//	data_file.AddItem(0, 14, static_cast<size_t>(exposure));
-		data_file.AddItem(0, 15, static_cast<double>(Phi_array)); // If needed
-		//***************** Creat RESULTS and case directories if doesn't exist ********
-		std::filesystem::path case_path = Tools::RESULTSFolder + Tools::GetTestCase();
-		cout << case_path << endl;
-		if (std::filesystem::create_directories(case_path))
-		{
-			cout << case_path.string() << " EXISTS " << endl;
-			data_file.WriteFile(Tools::RESULTSFolder + Tools::GetTestCase() + "/Capacity_Test_Data.txt");
-		}
-		else
-		{
-			cout << case_path.string() << "Already EXISTS " << endl;
-			data_file.WriteFile(Tools::RESULTSFolder + Tools::GetTestCase() + "/Capacity_Test_Data.txt");
-		//	exit(1);
-		}
-		//***************** Creating Power Folder Path ****************************
+		
+		Tools::data_file.AddItem(0, 0, 10 * log10(1000 * transmitter_power_watt));
+		Tools::data_file.AddItem(0, 1, Tools::Transmitter_height);
+		Tools::data_file.AddItem(0, 2, Total_receiver_points);
+		Tools::data_file.AddItem(0, 3, Carrier_Frequency);
+		Tools::data_file.AddItem(0, 4, Bandwidth);
+		Tools::data_file.AddItem(0, 5, Spacing);
+		Tools::data_file.AddItem(0, 6, Tools::CalculateNoisePower(Bandwidth));
+		Tools::data_file.AddItem(0, 7, Tools::Samples_Count = static_cast<double>(Samples_Count));
+		Tools::data_file.AddItem(0, 8, static_cast<double>(Transmitter_Elements_Count));
+		Tools::data_file.AddItem(0, 9, static_cast<double>(Receiver_Elements_Count));
+		Tools::data_file.AddItem(0, 10, Tools::Test_Case = Case);
+		Tools::data_file.AddItem(0, 11, static_cast<double>(groups));
+		Tools::data_file.AddItem(0, 12, static_cast<double>(Centered));
+		Tools::data_file.AddItem(0, 13, static_cast<double>(Feature));
+	//	Tools::data_file.AddItem(0, 14, static_cast<size_t>(exposure));
+		Tools::data_file.AddItem(0, 15, static_cast<double>(Phi_array)); // If needed
+		
+		//***************** Creating Power Folder Path ******************************
 		std::string power_path = cir_path;
 		std::string last_folder = cir_path.substr(cir_path.find_last_of('/'));
 		power_path.replace(cir_path.find_last_of('/'), last_folder.size(), "/power");
-		//*************************************************************************
-		//***************** Creating DoD Folder Path ****************************
+		cout << " POWER PATH IS : " << power_path << endl;
+		//****************************************************************************
+		//***************** Creating DoD Folder Path *********************************
 		std::string dod_path = cir_path;
 		last_folder = cir_path.substr(cir_path.find_last_of('/'));
 		dod_path.replace(cir_path.find_last_of('/'), last_folder.size(), "/dod");
 		std::filesystem::path dod = dod_path;
-		//***************** Check if the folder exists **************************
-		bool DOD_EXIST = false;
-		if (std::filesystem::exists(dod)) {
-			cout << " dod folder exists " << endl;
-			DOD_EXIST = true;
-			cout << " PATH TO THE TARGET FOLDER IS :" << dod_path << endl;
-		}
-		else
-		{
-			cout << " PATH TO THE TARGET FOLDER IS :" << dod_path << " DOES NOT EXIST"<<endl;
-		}
-		
+		cout << " DOD PATH IS : " << dod_path << endl;
 		//************************* APPLY *********************************************
-		ReadDirection(cir_path, dod_path, DOD_EXIST, transmitter_power_watt, MIMO_H_MATRIX);
+		Set MIMO_H_MATRIX;
+		ReadDirection(cir_path,transmitter_power_watt, MIMO_H_MATRIX, FILES::CIR);
+		if(CheckIfFolderExist(dod_path))
+			ReadDirection(dod_path, transmitter_power_watt, MIMO_H_MATRIX, FILES::DOD);
 		//************************* END APPLY *****************************************
-				
 		//************** CREATING TERMINALS DATA SET **********************************
-		std::vector<Terminal> Terminal_data_set;
 		//************** READING TERMINALS _POSITIONS FILE*****************************
 		string file_in_teminals_positions{ Position_Power_directory + "/Terminals_positions.txt" };
-		std::ifstream in_Terminals_positions{ file_in_teminals_positions };
-		if (!in_Terminals_positions)
-		{
-			std::cerr <<" Terminals_Positions file is not open." << std::endl;
-			exit(1);
-		}
-		std::vector<string> Terminals_positions_file{ std::istream_iterator<string>(in_Terminals_positions),std::istream_iterator<string>() };
-		size_t i_Terminals_positions = 0;
-		float Distance;
-		float Height;
-		float Phi;
-		float Theta;
-		float R;
-		for (auto xx : Terminals_positions_file)
-		{
-			if      (i_Terminals_positions % 5 == 0){converter << static_cast<std::string>(xx); converter >> Distance;	converter.clear();}
-			else if (i_Terminals_positions % 5 == 1){converter << static_cast<std::string>(xx); converter >> Height;	converter.clear();}
-			else if (i_Terminals_positions % 5 == 2){converter << static_cast<std::string>(xx); converter >> Phi;		converter.clear();}
-			else if (i_Terminals_positions % 5 == 3){converter << static_cast<std::string>(xx); converter >> Theta;		converter.clear();}
-			else if (i_Terminals_positions % 5 == 4){converter << static_cast<std::string>(xx); converter >> R;			converter.clear();}
-			i_Terminals_positions++;
-			
-			// Adding to the terminals data set //////////////////////////////////
-			if(i_Terminals_positions >0 && i_Terminals_positions %5==0)Terminal_data_set.push_back(Terminal(Distance, Height, Phi, Theta, R));
-			//////////////////////////////////////////////////////////////////////	
-		}
-		in_Terminals_positions.close();
-		cout << " Total Number of Lines :" << i_Terminals_positions/5 << endl;
-
-		std::array< EXPOSURE, 3>Expo = { LOS,NLOS,ALL };
-		for (EXPOSURE exposure : Expo)
-		{
-			Tools::SetRESULTSFolder(exposure);
-			cout << file_in_teminals_positions << endl; cout << Tools::RESULTSFolder + Tools::GetTestCase() + "/Terminals_positions.txt" << endl;
-			std::filesystem::create_directory(Tools::RESULTSFolder + Tools::GetTestCase());
-			//**********COPYING TERMINALS POSITION FILE TO RESULTS FOLDER ****************************
-			std::filesystem::copy_file(file_in_teminals_positions, Tools::RESULTSFolder + Tools::GetTestCase() + "/Terminals_positions.txt", filesystem::copy_options::overwrite_existing);
-			//**********COPYING TRANSMITTER POWER FILE TO RESULTS FOLDER ****************************
-			std::filesystem::copy_file(file_in_transmitter_power, Tools::RESULTSFolder + Tools::GetTestCase() + "/Transmitter_power.txt", filesystem::copy_options::overwrite_existing);
-			//**********WORKS ONLY FOR 1 TRANSMITTER AND BUNCH OF RECEIVERS***************************
-		}
+		std::vector<Terminal> Terminal_data_set = GetPositionDataSet(file_in_teminals_positions);
+		//*****************************************************************************
+		CreateResultsFolder(file_in_teminals_positions, file_in_transmitter_power);
+		//*****************************************************************************
 		size_t p{ 0 };
 		size_t i_terminal = 0;
 		size_t SetSize = MIMO_H_MATRIX.S.size();
@@ -236,13 +254,13 @@ public:
 	//	for (auto t : Terminal_data_set)
 		{
 	//		t.Show();
-		}
-	
+		}	
 		//****************************************************************************************
 	//	MIMO_H_MATRIX.SetCapacity("D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/MIMO_BS_UAV_TERMINALS/Capacity.txt");
 	//	MIMO_H_MATRIX.SetExposure();
 	//	cout << " Total Number of Points" << MIMO_H_MATRIX.S.size() << " Number of " << exposure << " Points is " << MIMO_H_MATRIX.GetEXPO(exposure).S.size() << endl;
-		MIMO_H_MATRIX.Permutate();
+		MIMO_H_MATRIX.PermutateBack();
+		MIMO_H_MATRIX.ShowPathes();
 		return MIMO_H_MATRIX;// .GetEXPO(exposure);
 	}
 	//////////////////////////////////////////////////////////
@@ -281,40 +299,66 @@ public:
 		else
 			return true;
 	}
+	void UpdatePathes(FILES FILE_TYPE, unsigned path_id, unsigned source_id, std::vector<FILE_COLUMN> ITEM, std::vector<Ray>& pathes)
+	{
+		unsigned PATH_ID= path_id;
+		unsigned SOURCE_ID= source_id;
+		double POWER;
+		double PHASE;
+		double ARRIVAL_TIME;
+		double ARRIVAL_PHI;
+		double ARRIVAL_THETA;
+		double DEPARTURE_PHI;
+		double DEPARTURE_THETA;
+		switch (FILE_TYPE)
+		{
+		case CIR:
+			POWER= ITEM.at(0).VALUE;
+			PHASE= ITEM.at(1).VALUE;
+			ARRIVAL_TIME= ITEM.at(2).VALUE;
+			ARRIVAL_PHI=0.0;
+			ARRIVAL_THETA=0.0;
+			DEPARTURE_PHI=0.0;
+			DEPARTURE_THETA=0.0;
+			break;
+		case DOD:
+			POWER= ITEM.at(4).VALUE;
+			PHASE=0.0;
+			ARRIVAL_TIME=0.0;
+			ARRIVAL_PHI= ITEM.at(0).VALUE;
+			ARRIVAL_THETA= ITEM.at(1).VALUE;
+			DEPARTURE_PHI= ITEM.at(2).VALUE;
+			DEPARTURE_THETA= ITEM.at(3).VALUE;
+			break;
+		}
+		Ray r(PATH_ID, SOURCE_ID, POWER, PHASE, ARRIVAL_TIME, ARRIVAL_PHI, ARRIVAL_THETA, DEPARTURE_PHI, DEPARTURE_THETA);
+		pathes.push_back(r);
+	}
 	//////////////////////////////////////////////////////////
-	void ReadDirection(std::string path_cir, std::string path_dod,bool DOD_EXIST,double transmitter_power_watt, Set& MIMO_H_MATRIX)
+	void ReadDirection(std::string path_folder, double transmitter_power_watt, Set& MIMO_H_MATRIX, FILES FILE_TYPE)
 	{
 		///////////////////////////////// START //////////////////////////////////////////////////////
 		std::string path;
-		bool Flag = false;
-		float file_count_float;
 		std::string file_name;
-		size_t last_cir_file_size;
-		size_t last_dod_file_size;
 		std::vector<Ray> pathes;
-		std::vector<Set_Line>S_DOD;
-		FILES FILE_TYPE;
-		
 		//*************************************************************************
 		unsigned char FILE_NAME_PARTS_COUNT;
 		std::string FILE_NAME_TYPE;
 		std::string START_SYMBOL;
 		int NUMBER_OF_COLUMNS;
 		unsigned NUMBER_OF_ITEMS;
-		std::vector<FILE_COLUMN> ITEM; //less than 8
-		for (unsigned item = 0; item < 8; item++)ITEM.push_back(FILE_COLUMN());
-		//////////////////
+		std::vector<FILE_COLUMN> ITEM;
+		//*************************************************************************
 		version wireless_inSite;
 		std::vector<std::string> parts;
 		std::string::size_type position{ 0 };
-
-	std:string key{ "" };
+		std:string key{ "" };
 		unsigned transmitter_id;
 		unsigned receiver_id;
 		unsigned transmitter_pt;
 		unsigned receiver_pt;
-		unsigned transmitter_element;
-		unsigned receiver_element;
+		int transmitter_element;
+		int receiver_element;
 		std::stringstream converter;
 		int start_at;
 		int cir_file_size;
@@ -322,277 +366,231 @@ public:
 		unsigned source_id;
 		int i = 0;
 		int j = 0;
-		Ray* r;
-		Tools T;
+		//*************************************************************************	
+		path = path_folder;
+		switch (FILE_TYPE)
+		{
+		case CIR:
+			FILE_NAME_PARTS_COUNT = 9;
+			FILE_NAME_TYPE = "cir";
+			NUMBER_OF_COLUMNS = 5;
+			NUMBER_OF_ITEMS = NUMBER_OF_COLUMNS - 2;
+			for (unsigned item = 0; item < NUMBER_OF_ITEMS; item++)ITEM.push_back(FILE_COLUMN());
+			ITEM.at(0).SET_FILE_COLUMN("Power(W)", 2, 0);
+			ITEM.at(1).SET_FILE_COLUMN("Phase(Rad)", 3, 0);
+			ITEM.at(2).SET_FILE_COLUMN("Arrival Time(s)", 4, 0);
+			break;
+		case DOD:
+			FILE_NAME_PARTS_COUNT = 8;
+			FILE_NAME_TYPE = "angles";
+			NUMBER_OF_COLUMNS = 7;
+			NUMBER_OF_ITEMS = NUMBER_OF_COLUMNS - 2;
+			for (unsigned item = 0; item < NUMBER_OF_ITEMS; item++)ITEM.push_back(FILE_COLUMN());
+			ITEM.at(0).SET_FILE_COLUMN("Arrival Phi(Rad)", 2, 0);
+			ITEM.at(1).SET_FILE_COLUMN("Arrival Theta(Rad)", 3, 0);
+			ITEM.at(2).SET_FILE_COLUMN("Departure Phi(Rad)", 4, 0);
+			ITEM.at(3).SET_FILE_COLUMN("Departure Theta(Rad)", 5, 0);
+			ITEM.at(4).SET_FILE_COLUMN("Power(W)", 6, 0);
+			break;
+		}
 		//**********************************************************************
-		string_vector v_CIR;
+		string_vector v;
 		try {
-			for (const auto& entry : std::filesystem::directory_iterator(path_cir))
-			{
-				v_CIR.push_back(entry.path().filename().generic_string());
+			for (const auto& entry : std::filesystem::directory_iterator(path_folder))
+			{  
+				v.push_back(entry.path().filename().generic_string());
 			}
 		}
 		catch (const char aMessage[]) {
 			cout << " ERROR IN DIRECTORY DISCRIPTION OR DIRECTORY NOT FOUND " << aMessage << endl;
 			exit(1);
 		}
-		//**********************************************************************
-		string_vector v_DOD;
-		if (DOD_EXIST)
+		//************************** READ FILES ****************************
+		for (size_t file_count=0;file_count<v.size();file_count++)// the file is chosen
 		{
-			try {
-				for (const auto& entry : std::filesystem::directory_iterator(path_dod))
-				{
-					v_DOD.push_back(entry.path().filename().generic_string());
-				}
-			}
-			catch (const char aMessage[]) {
-				cout << " ERROR IN DIRECTORY DISCRIPTION OR DIRECTORY NOT FOUND " << aMessage << endl;
-				exit(1);
-			}
-		}
-		//**********************************************************************
-		// Check if CIR and DOD contains the same information
-		size_t limit_which = 1;
-		if (DOD_EXIST)
-		{
-			if (v_DOD.size() != v_CIR.size())
+			// Cleaning for each file ////
+			//////////////////////////////
+			for (auto& item : ITEM)item.VALUE = 0.0;
+			parts.clear();
+			pathes.clear();
+			//////////////////////////////
+			file_name = v.at(file_count);
+			
+			// Get Files from the folder				
+			auto file_open = path + "/" + file_name;
+	//		cout << file_open << endl;
+			position = 0;
+			while ((file_name.find(".")) != std::string::npos)
 			{
-				cout << " UNMATECHED CIR AND DOD FILES " << endl; exit(1);
+				position = file_name.find_first_of('.', 0);
+				parts.push_back(file_name.substr(0, position));
+				file_name.erase(0, static_cast<std::string>(*(parts.end() - 1)).size() + 1);
 			}
-			limit_which = 2;
-		}
-		for (size_t file_count=0;file_count<v_CIR.size();file_count++)// the file is chosen/////////////////////////////////
-		{
-			for (size_t which = 0; which < limit_which; which++)
+			
+			parts.push_back(file_name);
+			if (parts.size() == FILE_NAME_PARTS_COUNT && static_cast<std::string>(*(parts.end() - 1)) == "csv")
 			{
-				if (which == 0) //CIR
+				if (static_cast<std::string>(*(parts.begin())) == FILE_NAME_TYPE)
 				{
-					file_name = v_CIR.at(file_count);
-					FILE_TYPE = CIR;
-					path = path_cir;
-					last_cir_file_size = 0; 
-				}
-				else //DOD
-				{
-					file_name = v_DOD.at(file_count); 
-					FILE_TYPE = DOD;
-					path = path_dod;
-					last_dod_file_size = 0;
-				}
-				switch (FILE_TYPE)
-				{
-				case CIR:
-					FILE_NAME_PARTS_COUNT = 9;
-					FILE_NAME_TYPE = "cir";
-					START_SYMBOL = "(s)>";
-					NUMBER_OF_COLUMNS = 5;
-					ITEM.at(0).SET_FILE_COLUMN("Power(W)", 2, 0);
-					ITEM.at(1).SET_FILE_COLUMN("Phase(Rad)", 3, 0);
-					ITEM.at(2).SET_FILE_COLUMN("Arrival Time(s)", 4, 0);
-					pathes.clear();
-					break;
-				case DOD:
-					FILE_NAME_PARTS_COUNT = 8;
-					FILE_NAME_TYPE = "angles";
-					START_SYMBOL = "(W)>";
-					NUMBER_OF_COLUMNS = 7; 
-					NUMBER_OF_ITEMS = NUMBER_OF_COLUMNS - 2;
-					ITEM.resize(NUMBER_OF_ITEMS);
-					ITEM.at(0).SET_FILE_COLUMN("Arrival Phi(Rad)", 2, 0); 
-					ITEM.at(1).SET_FILE_COLUMN("Arrival Theta(Rad)", 3, 0); 
-					ITEM.at(2).SET_FILE_COLUMN("Departure Phi(Rad)", 4, 0); 
-					ITEM.at(3).SET_FILE_COLUMN("Departure Theta(Rad)", 5, 0); 
-					ITEM.at(4).SET_FILE_COLUMN("Power(W)", 6, 0);
-					break;
-				}
-				auto file_open = path + "/" + file_name;
-				parts.clear();
-				position = 0;
-				while ((file_name.find(".")) != std::string::npos)
-				{
-					position = file_name.find_first_of('.', 0);
-					parts.push_back(file_name.substr(0, position));
-					file_name.erase(0, static_cast<std::string>(*(parts.end() - 1)).size() + 1);
-				}
-				parts.push_back(file_name);
-				if (parts.size() == FILE_NAME_PARTS_COUNT && static_cast<std::string>(*(parts.end() - 1)) == "csv")
-				{
-					if (static_cast<std::string>(*(parts.begin())) == FILE_NAME_TYPE)
+					converter << static_cast<std::string>(*(parts.begin() + 1)).substr(5, 3);	converter >> transmitter_id;	    converter.clear();	// Transmitter Set
+					converter << static_cast<std::string>(*(parts.begin() + 2)).substr(4);		converter >> transmitter_pt;		converter.clear();	// Transmitter Point
+					converter << static_cast<std::string>(*(parts.begin() + 3)).substr(5, 3);	converter >> receiver_id;		    converter.clear();	// Receiver Set
+					converter << static_cast<std::string>(*(parts.begin() + 4)).substr(4);		converter >> receiver_pt;		    converter.clear();	// Receiver Point
+					converter << static_cast<std::string>(*(parts.begin() + 5)).substr(4, 3);	converter >> transmitter_element;	converter.clear();	// Transmitter Element  
+					converter << static_cast<std::string>(*(parts.begin() + 6)).substr(4, 3);	converter >> receiver_element;		converter.clear();	// Receiver Element
+					converter.flush();
+					key = static_cast<std::string>(*(parts.begin() + 1)).substr(5, 3) + static_cast<std::string>(*(parts.begin() + 2)).substr(4, 3) + static_cast<std::string>(*(parts.begin() + 3)).substr(5, 3) + static_cast<std::string>(*(parts.begin() + 4)).substr(4, 3);
+					string file_in{ file_open };  // the file is open
+					std::ifstream in{ file_in };
+					if (!in)
 					{
-						converter << static_cast<std::string>(*(parts.begin() + 1)).substr(5, 3);	converter >> transmitter_id;	    converter.clear();	// Transmitter Set
-						converter << static_cast<std::string>(*(parts.begin() + 2)).substr(4);		converter >> transmitter_pt;		converter.clear();	// Transmitter Point
-						converter << static_cast<std::string>(*(parts.begin() + 3)).substr(5, 3);	converter >> receiver_id;		    converter.clear();	// Receiver Set
-						converter << static_cast<std::string>(*(parts.begin() + 4)).substr(4);		converter >> receiver_pt;		    converter.clear();	// Receiver Point
-						converter << static_cast<std::string>(*(parts.begin() + 5)).substr(4, 3);	converter >> transmitter_element;	converter.clear();	// Transmitter Element  
-						converter << static_cast<std::string>(*(parts.begin() + 6)).substr(4, 3);	converter >> receiver_element;		converter.clear();	// Receiver Element
-						converter.flush();
-						key = static_cast<std::string>(*(parts.begin() + 1)).substr(5, 3) + static_cast<std::string>(*(parts.begin() + 2)).substr(4, 3) + static_cast<std::string>(*(parts.begin() + 3)).substr(5, 3) + static_cast<std::string>(*(parts.begin() + 4)).substr(4, 3);
-		
-						string file_in{ file_open };  // the file is opened/////////////////////////////////
-						std::ifstream in{ file_in };
-						if (!in)
+						std::cerr << file_in << " not open." << std::endl;
+						std::cout << file_in << " not open." << std::endl;
+						exit(1);
+					}
+					std::vector<string> cir_file{ std::istream_iterator<string>(in),std::istream_iterator<string>() };
+					
+					///////////////////////// CHECK VERSION ////////////////////////////////////
+					if (cir_file.at(0) == "Path" && cir_file.at(1) == "Id,Source"/* && cir_file.at(2) == "Id,Received" && cir_file.at(3) == "Power"*/)wireless_inSite = v3_0_01; else wireless_inSite = v3_3_31;
+					////////////////////////////////////////////////////////////////////////////
+					switch (FILE_TYPE)
+					{
+					case CIR:
+					switch (wireless_inSite) { case v3_0_01:START_SYMBOL = "(s)"; break; case v3_3_31:START_SYMBOL = "(s)>"; break; }
+														   break;
+					case DOD:
+					switch (wireless_inSite) { case v3_0_01:START_SYMBOL = "(W)"; break; case v3_3_31:START_SYMBOL = "(W)>"; break; }
+														   break;
+					}
+					////////////// Get the Start point
+					i = 0;
+					for (auto xx : cir_file)
+					{
+						i++;
+						if (xx == START_SYMBOL)
 						{
-							std::cerr << file_in << " not open." << std::endl;
-							std::cout << file_in << " not open." << std::endl;
-							exit(1);
+							start_at = i;
+							break;
 						}
-						std::vector<string> cir_file{ std::istream_iterator<string>(in),std::istream_iterator<string>() };
+					}
+					switch (wireless_inSite)
+					{
+					case v3_0_01:
+						///////////// READING ///////////////////
+						//cout << "Version : 3.0.01" << endl;
+						Tools::WirelessInsiteVersion = v3_0_01;
+						Tools::WirelessInsiteVersion_DOD = v3_0_01;
+						//////////////////////////////////////////
 						i = 0;
-						for (auto xx : cir_file)
+						path_id = 0;
+						source_id = 0;
+						while (i < (cir_file.size() - 9))
 						{
-							i++;
-							if (xx == START_SYMBOL)
-							{
-								start_at = i;
-								break;
-							}
-						}
-						///////////////////////// CHECK VERSION ////////////////////////////////////
-						if (cir_file.at(0) == "Path" && cir_file.at(1) == "Id,Source"/* && cir_file.at(2) == "Id,Received" && cir_file.at(3) == "Power"*/)wireless_inSite = v3_0_01; else wireless_inSite = v3_3_31;
-						switch (wireless_inSite)
-						{
-						case v3_0_01:
-							///////////// READING ///////////////////
-						//	cout << "Version : 3.0.01" << endl;
-							
-							
-							i = 0;
-							path_id = 0;
-							source_id = 0;
-							///////////////
 							for (auto& item : ITEM)item.VALUE = 0.0;
-							///////////////
-							while (i < (cir_file.size() - 9))
+							unsigned char k = 0;
+							std::string reading{ "" };
+							std::string line = static_cast<std::string>(cir_file.at(9 + i));
+							while (line.size() > 0)
 							{
-								unsigned char k = 0;
-								std::string reading{ "" };
-								std::string line = static_cast<std::string>(cir_file.at(9 + i));
-								while (line.size() > 0)
+								if (k < NUMBER_OF_COLUMNS)
 								{
-									if (k < NUMBER_OF_COLUMNS)
+									unsigned j = line.find_first_of(",");
+									reading = line.substr(0, j);
+								}
+								else
+								{
+									reading = line;
+								}
+								switch (k)
+								{
+								case 0:	converter << reading; converter >> path_id;		converter.clear(); break;
+								case 1:	converter << reading; converter >> source_id;	converter.clear(); break;
+								default:
+									if ((k - 2) < ITEM.size())
 									{
-										unsigned j = line.find_first_of(",");
-										reading = line.substr(0, j);
+										converter << reading; converter >> ITEM.at(k - 2).VALUE;	converter.clear(); break;
 									}
 									else
-									{
-										reading = line;
-									}
-									switch (k)
-									{
-									case 0:	converter << reading; converter >> path_id;		converter.clear(); break;
-									case 1:	converter << reading; converter >> source_id;	converter.clear(); break;
-
-									default:
-										converter << reading; converter >> ITEM.at(k - 2).VALUE;	converter.clear(); break;
-										break;
-									}
-									k++;
-									line.erase(0, reading.size() + 1);
-								}
-								converter.flush();
-								//	cout << path_id << setw(15) << source_id << setw(15) << ITEM.at(0).VALUE << setw(15) << ITEM.at(1).VALUE << setw(15) << ITEM.at(2).VALUE << endl;
-								Ray r(path_id, source_id); 
-								switch (FILE_TYPE)
-								{
-								case CIR:
-									Tools::WirelessInsiteVersion = v3_0_01;
-									r.Set(ITEM.at(0).VALUE, ITEM.at(1).VALUE, ITEM.at(2).VALUE);//power, phase, time);
-									pathes.push_back(r);
-									break;
-								case DOD:
-									Tools::WirelessInsiteVersion_DOD = v3_0_01;
-									if (last_dod_file_size < pathes.size())
-									{
-										pathes.at(last_dod_file_size).SetDirections(path_id, source_id, ITEM.at(0).VALUE, ITEM.at(1).VALUE, ITEM.at(2).VALUE, ITEM.at(3).VALUE);
-										last_dod_file_size++;
-									}
+										cout << " ERROR : ITEM RECORD DOSN'T HAVE ENOUGH FIELDS !!" << endl;
 									break;
 								}
-								i++;
+								k++;
+								line.erase(0, reading.size() + 1);
 							}
-							/////   ALL PATHES ARE ADDED 
-							/////////////////////////////////////////
-							break;
-						case v3_3_31:
-							///////////// READING ///////////////////
-						//	cout << "Version : 3.3.31" << endl;
-							i = 0;
-							///////////////
-							for (auto& item : ITEM)item.VALUE = 0.0;
-
-							cir_file_size = static_cast<int>(cir_file.size());
-							while (i < (cir_file_size - (start_at + 4)))
-							{
-								path_id = T.ConvertToUnsigned_general(static_cast<std::string>(*(cir_file.begin() + (start_at + i))));// cout << path_id << endl;
-								source_id = T.ConvertToUnsigned_general(static_cast<std::string>(*(cir_file.begin() + 1 + (start_at + i))));// cout << source_id << endl;
-								j = 0;
-								for (size_t j = 0; j < NUMBER_OF_COLUMNS-2;j++)
-								{
-									ITEM.at(j).VALUE = T.ConvertToDouble(static_cast<std::string>(*(cir_file.begin() + (start_at + 2 + j + i)))); //cout << ITEM.at(j).VALUE << endl;
-								}
-								Ray r(path_id, source_id);
-								switch (FILE_TYPE)
-								{
-								case CIR:	
-									Tools::WirelessInsiteVersion = v3_3_31;
-									r.Set(ITEM.at(0).VALUE, ITEM.at(1).VALUE, ITEM.at(2).VALUE);//power, phase, time);
-									pathes.push_back(r); 
-									break;
-								case DOD:
-									Tools::WirelessInsiteVersion_DOD = v3_3_31;	
-									if (last_dod_file_size < pathes.size())
-									{
-										pathes.at(last_dod_file_size).SetDirections(path_id, source_id, ITEM.at(0).VALUE, ITEM.at(1).VALUE, ITEM.at(2).VALUE, ITEM.at(3).VALUE);
-										last_dod_file_size++;
-									}
-									break;
-								}
-								i = i + NUMBER_OF_COLUMNS;
-							}
-							/////////////////////////////////////////
-							break;
-						default:
-							cout << " UNKNOWN " << endl;
+							converter.flush();
+							//	cout << path_id << setw(15) << source_id << setw(15) << ITEM.at(0).VALUE << setw(15) << ITEM.at(1).VALUE << setw(15) << ITEM.at(2).VALUE << endl;
+							UpdatePathes(FILE_TYPE, path_id, source_id, ITEM, pathes);
+							i++;
 						}
-						complex<double>ray_sum = complex<double>(0, 0);
-						complex<double>ray_Power_sum = complex<double>(0, 0);
-						Ray ray_path;
-						Ray power_ray;
-						switch (FILE_TYPE)
+						/////   ALL PATHES ARE ADDED 
+						/////////////////////////////////////////
+						break;
+					case v3_3_31:
+						///////////// READING ///////////////////
+						//cout << "Version : 3.3.31" << endl;
+						i = 0;
+						Tools::WirelessInsiteVersion = v3_3_31;
+						Tools::WirelessInsiteVersion_DOD = v3_3_31;
+						//////////////////////////////////////////
+						cir_file_size = static_cast<int>(cir_file.size());
+						while (i < (cir_file_size - (start_at + 4)))
 						{
-						case DOD:   // Creat the Pathes and add Matrix Item
-							for (auto& p : pathes)
+							for (auto& item : ITEM)item.VALUE = 0.0;
+							path_id = Tools::ConvertToUnsigned_general(static_cast<std::string>(*(cir_file.begin() + (start_at + i))));//cout << " at position : "<< static_cast<std::string>(*(cir_file.begin() + (start_at + i))) << " Path Id : " << path_id << endl;
+							source_id = Tools::ConvertToUnsigned_general(static_cast<std::string>(*(cir_file.begin() + 1 + (start_at + i))));// cout << source_id << endl;
+							j = 0;
+							for (size_t j = 0; j < NUMBER_OF_ITEMS; j++)
 							{
-								ray_path.Set(p.Path_ID, p.Source_ID, p.Power / transmitter_power_watt, p.Phase, p.Arrival_Time);
-								ray_sum = ray_sum + ray_path.Voltage_Value;
-								power_ray.Set(p.Path_ID, p.Source_ID, p.Power, p.Phase, p.Arrival_Time);
-								ray_Power_sum = ray_Power_sum + power_ray.Voltage_Value;
+								if ((start_at + 2 + j + i) < cir_file.size())
+									ITEM.at(j).VALUE = Tools::ConvertToDouble(static_cast<std::string>(*(cir_file.begin() + (start_at + 2 + j + i)))); //cout << ITEM.at(j).VALUE << endl;
+								else
+									cout << "ERROR : THE CIR FILE ENDED TOO EARLY !!" << endl;
 							}
-							MIMO_H_MATRIX.AddTopologyItem(transmitter_id, receiver_id, transmitter_pt, receiver_pt, transmitter_element, receiver_element);
-							MIMO_H_MATRIX.AddItem(pathes, transmitter_id, receiver_id, transmitter_pt, receiver_pt, transmitter_element - 1, receiver_element - 1, std::conj(ray_sum), pow(std::abs(ray_Power_sum), 2));// ->ShowPathes();
-							break;
-						case CIR:  // Only Modify the Pathes
-							if (!DOD_EXIST)
-							{
-								for (auto& p : pathes)
-								{
-									ray_path.Set(p.Path_ID, p.Source_ID, p.Power / transmitter_power_watt, p.Phase, p.Arrival_Time);
-									ray_sum = ray_sum + ray_path.Voltage_Value;
-									power_ray.Set(p.Path_ID, p.Source_ID, p.Power, p.Phase, p.Arrival_Time);
-									ray_Power_sum = ray_Power_sum + power_ray.Voltage_Value;
-								}
-								MIMO_H_MATRIX.AddTopologyItem(transmitter_id, receiver_id, transmitter_pt, receiver_pt, transmitter_element, receiver_element);
-								MIMO_H_MATRIX.AddItem(pathes, transmitter_id, receiver_id, transmitter_pt, receiver_pt, transmitter_element - 1, receiver_element - 1, std::conj(ray_sum), pow(std::abs(ray_Power_sum), 2));// ->ShowPathes();
-							}
-							break;
+							UpdatePathes(FILE_TYPE, path_id, source_id, ITEM, pathes); 
+							i = i + NUMBER_OF_COLUMNS;
 						}
-						in.close(); // the file is closed/////////////////////////////////
+						/////////////////////////////////////////
+						break;
+					default:
+						cout << " UNKNOWN " << endl;
 					}
+					complex<double>ray_sum = complex<double>(0, 0);
+					complex<double>ray_Power_sum = complex<double>(0, 0);
+					Ray ray_path;
+					Ray power_ray; 
+					
+					switch (FILE_TYPE)
+					{
+					case FILES::CIR:
+						for (auto& p : pathes)
+						{
+						//	p.ShowRay();
+							ray_path.Set(p.Path_ID, p.Source_ID, p.Power / transmitter_power_watt, p.Phase, p.Arrival_Time);
+							ray_sum = ray_sum + ray_path.Voltage_Value;
+							power_ray.Set(p.Path_ID, p.Source_ID, p.Power, p.Phase, p.Arrival_Time);
+							ray_Power_sum = ray_Power_sum + power_ray.Voltage_Value;
+						}
+					//	cout << " ************ WRITING ***************" << endl;
+					//	cout << " Transmitter element : " << transmitter_element - 1 << endl;
+					//	cout << " Receiver element : " << receiver_element - 1 << endl;
+					//	cout << " Pathes to add :" << endl;
+					//	for (auto& p : pathes)p.ShowRay();
+						MIMO_H_MATRIX.AddTopologyItem(transmitter_id, receiver_id, transmitter_pt, receiver_pt, transmitter_element, receiver_element);
+						(MIMO_H_MATRIX.AddItem(pathes, transmitter_id, receiver_id, transmitter_pt, receiver_pt, transmitter_element - 1, receiver_element - 1, std::conj(ray_sum), pow(std::abs(ray_Power_sum), 2)));// ->ShowPathes();
+					//	cout << " ************ END WRITING ***************" << endl;
+						break;
+					case FILES::DOD:
+						//for (auto& p : pathes)p.ShowRay();
+						//Update Set
+						if (!MIMO_H_MATRIX.UpdateItem(pathes, transmitter_id, receiver_id, transmitter_pt, receiver_pt, transmitter_element, receiver_element))
+							cout << " ERROR : RAYS MISMATCH !!" << endl;
+						break;
+					}	
+					in.close(); // the file is closed 
 				}
 			}
 		}
+	//	MIMO_H_MATRIX.ShowPathes();
 		///////////////////////////  END  ////////////////////////////////////////////////
 	}
 };

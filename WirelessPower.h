@@ -8,7 +8,7 @@
 #include <numeric>
 #include <complex>
 #include <sstream>
-#include"MatrixMIMO.h"
+#include <matrix.h>
 using namespace std;
 
 
@@ -18,7 +18,7 @@ public:
 	WirelessPower()
 	{
 	}
-	WirelessPower(MatrixMIMO<std::complex<double>> v)
+	WirelessPower(Complex_matrix v)
 	{
 		V = v;
 	}
@@ -30,10 +30,10 @@ public:
 	{
 		return arg(V.GetItem(r, c));
 	}
-	MatrixMIMO<double> Power()
+	Double_matrix Power()
 	{
 		size_t r{ 0 }, c{ 0 };
-		MatrixMIMO<double>m;
+		Double_matrix m;
 		for (auto row : this->V.Rows)
 		{
 			for (auto item : row)
@@ -45,10 +45,10 @@ public:
 		}
 		return m;
 	}
-	MatrixMIMO<double> Phase()
+	Double_matrix Phase()
 	{
 		size_t r, c{ 0 };
-		MatrixMIMO<double>m;
+		Double_matrix m;
 		for (vector< complex<double>> row : this->V.Rows)
 		{
 			for (complex<double> item : row)
@@ -60,10 +60,10 @@ public:
 		}
 		return m;
 	}
-	MatrixMIMO<complex<double>> PowerPhasor()
+	Complex_matrix  PowerPhasor()
 	{
 	//	size_t r{ 0 }, c{ 0 };
-		MatrixMIMO<complex<double>>m;
+		Complex_matrix m;
 		for (size_t r = 0; r < V.Rows_Count;r++)// (auto row : this->V.Rows)
 		{
 			for (size_t c = 0; c < V.Columns_Count; c++)//(auto item : row)
@@ -75,10 +75,10 @@ public:
 		}
 		return m;
 	}
-	MatrixMIMO<complex<double>> Shrink()// Shrink don the matrix ito one row contains the sum of columns
+	Complex_matrix  Shrink()// Shrink don the matrix ito one row contains the sum of columns
 	{
 		complex<double> s = complex<double>(0, 0);
-		MatrixMIMO< complex<double>>S;
+		Complex_matrix S;
 		
 		for (size_t j = 0; j < V.Columns_Count; j++)
 		{
@@ -91,10 +91,10 @@ public:
 		}
 		return WirelessPower(S).PowerPhasor();
 	}
-	MatrixMIMO<complex<double>> Shrink_Horizontal()// Shrink don the matrix ito one row contains the sum of columns
+	Complex_matrix  Shrink_Horizontal()// Shrink don the matrix ito one row contains the sum of columns
 	{
 		complex<double> s = complex<double>(0, 0);
-		MatrixMIMO< complex<double>>S;
+		Complex_matrix S;
 
 		for (size_t j = 0; j < V.Rows_Count; j++)
 		{
@@ -107,10 +107,10 @@ public:
 		}
 		return WirelessPower(S).PowerPhasor();
 	}
-	MatrixMIMO<complex<double>> Transmitter_Diagonal()// creat diagonal matrix of the transmitted power per transmitter
+	Complex_matrix  Transmitter_Diagonal()// creat diagonal matrix of the transmitted power per transmitter
 	{
-		MatrixMIMO<complex<double>> transmited_power = this->Shrink_Horizontal();
-		MatrixMIMO<complex<double>> d;
+		Complex_matrix  transmited_power = this->Shrink_Horizontal();
+		Complex_matrix  d;
 		size_t n = transmited_power.Rows_Count;
 		for(size_t i=0;i<n;i++)
 			for (size_t j = 0; j < n; j++)
@@ -122,10 +122,10 @@ public:
 			}
 		return d;
 	}
-	MatrixMIMO<complex<double>> Rceiver_Diagonal()// creat diagonal matrix of the transmitted power per transmitter
+	Complex_matrix  Rceiver_Diagonal()// creat diagonal matrix of the transmitted power per transmitter
 	{
-		MatrixMIMO<complex<double>> transmited_power = this->Shrink();
-		MatrixMIMO<complex<double>> d;
+		Complex_matrix  transmited_power = this->Shrink();
+		Complex_matrix  d;
 		size_t n = transmited_power.Columns_Count;
 		for (size_t i = 0; i < n; i++)
 			for (size_t j = 0; j < n; j++)
@@ -139,7 +139,7 @@ public:
 	}
 	double Rceiver_Average_Power()// Return average power received by a teriminal
 	{
-		MatrixMIMO<complex<double>> transmited_power = this->Shrink();
+		Complex_matrix  transmited_power = this->Shrink();
 		size_t n = transmited_power.Columns_Count;
 		double p{ 0.0 };
 		for (size_t i = 0; i < n; i++)p = p + abs(transmited_power.GetItem(0, i));
@@ -214,11 +214,11 @@ public:
 	}	
 	void Show()
 	{
-		MatrixMIMO<complex<double>> p=this->PowerPhasor();
+		Complex_matrix  p=this->PowerPhasor();
 		p.Show(POLAR);
 	}
 public:
-	MatrixMIMO<std::complex<double>> V;
+	Complex_matrix V;
 };
 /*
 bool operator==(const WirelessPower& lhs, const WirelessPower& rhs)

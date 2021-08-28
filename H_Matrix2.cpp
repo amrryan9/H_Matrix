@@ -3,13 +3,13 @@
 // This is The new Branch Modification
 
 #include "File_Processing.h"
-#include "File_Processing_SISO.h"
+//#include "File_Processing_SISO.h"
 #include <iostream>
 
 int main()
 {
 	auto* f = new File_Processing();
-	auto* g = new File_Processing_SISO();
+//	auto* g = new File_Processing_SISO();
 
 //	(g->read_directory("D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/" + Tools::ConvertToString(x) + "/MIMO_BS_UAV_TERMINALS/MIMO_UAV_10_LOS.cir.t001_01.r002.p2m")).CreatDistanceSubsets(SISO); //.ShowH();////.ShowCapacity();//  .ShowValid();//.ShowPower();// .ShowPower(0, 0); //
 
@@ -39,11 +39,13 @@ int main()
 
 	/*		//	for (int x :folders)
 	{
+	*/
 		int x = 9700;
-		S = g->read_directory("D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/" + Tools::ConvertToString(x) + "/MIMO_BS_UAV_TERMINALS/MIMO_UAV_10_LOS.cir.t001_01.r002.p2m");
+		S = f->read_directory("D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/" + Tools::ConvertToString(x) + "/MIMO_BS_UAV_TERMINALS/MIMO_UAV_10_LOS.cir.t001_01.r002.p2m");
 		zero_points_los = S.CreatOneDistanceSubsets(true,LOS);
 		zero_points_nlos = S.CreatOneDistanceSubsets(true,NLOS);
 		//for (auto z : zero_points_los) std::cout << " Point # : " << z << " has zero Capacity." << endl;
+	/*
 	}
 //	for (int x = 1; x <= 21; x = x + 2) // 120 Street
 	{
@@ -310,6 +312,7 @@ int main()
 		S = f->read_directory("D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/" + Tools::ConvertToString(x) + "/MIMO_BS_UAV_TERMINALS/cir");
 		(S.RemoveLines(zero_points_los)).CreatOneDistanceSubsets2(false, ALL);
 	*/
+/*
 	for (int x = 10009; x <= 10018; x++)
 	{
 		zero_points_los.clear();
@@ -323,6 +326,7 @@ int main()
 		(S.RemoveLines(zero_points_los)).CreatOneDistanceSubsets2(false, ALL);
 
 	}
+	*/
 	/*
 		zero_points_los.clear();
 		zero_points_nlos.clear();

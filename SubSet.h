@@ -123,7 +123,7 @@ public:
 		{
 			H.Increment(t.M);
 			Q.Increment(t.Q);
-			gg_her = t.M.Transposed_General() * (t.M.Conjugate_General());
+			gg_her = t.M.Transposed() * (t.M.Conjugate());
 			GG_Her.Increment(gg_her);
 	//		cout << "*************** GG_HER*****************" << endl;
 	//		GG_Her.Show();
