@@ -3,16 +3,16 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <array>
-#include <map>
-#include <algorithm>
-#include <iterator>
-#include <filesystem>
-#include <sstream>
-#include <numeric>
-#include <complex>
-#include <iomanip>
-#include <cmath>
+#include <array>						///////////////////////////////////////////
+#include <map>							//// This Class Reads the 'cir' and 'dod' folders at
+#include <algorithm>					//// Wireless Insite StudyArea folder wihic are 
+#include <iterator>						//// Created using MIMO output feature.
+#include <filesystem>					//// It is used only for a MIMO simulation
+#include <sstream>						//// The output is a Data set contains all the links between the transmitter(s) and 
+#include <numeric>						//// the receiver(s) points. each link contains the rays , or the propagation paths 
+#include <complex>						//// between each antenna element of each transmitter to each antenna element 
+#include <iomanip>						//// at each receiver, plus a topology data, with positions of the receiver points
+#include <cmath>						//// and the orientation of the antenna array
 #include "H_Item.h"
 #include "Ray.h"
 #include "Set.h"
@@ -256,11 +256,11 @@ public:
 	//		t.Show();
 		}	
 		//****************************************************************************************
-	//	MIMO_H_MATRIX.SetCapacity("D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/MIMO_BS_UAV_TERMINALS/Capacity.txt");
-	//	MIMO_H_MATRIX.SetExposure();
-	//	cout << " Total Number of Points" << MIMO_H_MATRIX.S.size() << " Number of " << exposure << " Points is " << MIMO_H_MATRIX.GetEXPO(exposure).S.size() << endl;
+		MIMO_H_MATRIX.SetExposure();
+		MIMO_H_MATRIX.GetEXPO(EXPOSURE::LOS);
+	//	cout << " Total Number of Points" << MIMO_H_MATRIX.S.size() << " Number of " << " LOS" << " Points is " << MIMO_H_MATRIX.GetEXPO(EXPOSURE::LOS).S.size() << endl;
 		MIMO_H_MATRIX.PermutateBack();
-		MIMO_H_MATRIX.ShowPathes();
+	//	MIMO_H_MATRIX.Show();
 		return MIMO_H_MATRIX;// .GetEXPO(exposure);
 	}
 	//////////////////////////////////////////////////////////
@@ -518,7 +518,6 @@ public:
 								line.erase(0, reading.size() + 1);
 							}
 							converter.flush();
-							//	cout << path_id << setw(15) << source_id << setw(15) << ITEM.at(0).VALUE << setw(15) << ITEM.at(1).VALUE << setw(15) << ITEM.at(2).VALUE << endl;
 							UpdatePathes(FILE_TYPE, path_id, source_id, ITEM, pathes);
 							i++;
 						}
@@ -564,24 +563,15 @@ public:
 					case FILES::CIR:
 						for (auto& p : pathes)
 						{
-						//	p.ShowRay();
 							ray_path.Set(p.Path_ID, p.Source_ID, p.Power / transmitter_power_watt, p.Phase, p.Arrival_Time);
 							ray_sum = ray_sum + ray_path.Voltage_Value;
 							power_ray.Set(p.Path_ID, p.Source_ID, p.Power, p.Phase, p.Arrival_Time);
 							ray_Power_sum = ray_Power_sum + power_ray.Voltage_Value;
 						}
-					//	cout << " ************ WRITING ***************" << endl;
-					//	cout << " Transmitter element : " << transmitter_element - 1 << endl;
-					//	cout << " Receiver element : " << receiver_element - 1 << endl;
-					//	cout << " Pathes to add :" << endl;
-					//	for (auto& p : pathes)p.ShowRay();
 						MIMO_H_MATRIX.AddTopologyItem(transmitter_id, receiver_id, transmitter_pt, receiver_pt, transmitter_element, receiver_element);
-						(MIMO_H_MATRIX.AddItem(pathes, transmitter_id, receiver_id, transmitter_pt, receiver_pt, transmitter_element - 1, receiver_element - 1, std::conj(ray_sum), pow(std::abs(ray_Power_sum), 2)));// ->ShowPathes();
-					//	cout << " ************ END WRITING ***************" << endl;
+						(MIMO_H_MATRIX.AddItem(pathes, transmitter_id, receiver_id, transmitter_pt, receiver_pt, transmitter_element - 1, receiver_element - 1, std::conj(ray_sum), pow(std::abs(ray_Power_sum), 2)));
 						break;
 					case FILES::DOD:
-						//for (auto& p : pathes)p.ShowRay();
-						//Update Set
 						if (!MIMO_H_MATRIX.UpdateItem(pathes, transmitter_id, receiver_id, transmitter_pt, receiver_pt, transmitter_element, receiver_element))
 							cout << " ERROR : RAYS MISMATCH !!" << endl;
 						break;
@@ -590,7 +580,6 @@ public:
 				}
 			}
 		}
-	//	MIMO_H_MATRIX.ShowPathes();
 		///////////////////////////  END  ////////////////////////////////////////////////
 	}
 };

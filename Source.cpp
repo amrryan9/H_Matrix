@@ -17,5 +17,5 @@ int main()
 //	zero_points_nlos = S.CreatOneDistanceSubsets(true, NLOS);
 
 	S = f->read_directory("D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/" + Tools::ConvertToString(847) + "/MIMO_BS_UAV_TERMINALS/cir");
-//	(S.RemoveLines(zero_points_los)).CreatOneDistanceSubsets2(false, LOS);
+	S.ShowPower(1, 1, 1, 2, 74, 1);
 }

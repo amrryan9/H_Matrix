@@ -76,7 +76,7 @@ public:
 	}
 	bool AddItem(Set_Line& line)
 	{
-		if (Pick(line)){if (line.IsValid())this->Terminals.push_back(line); return true;}
+		if (Pick(line)){this->Terminals.push_back(line); return true;}
 		return false;
 	}
 	bool AddItemDirect(Set_Line& line)
@@ -85,70 +85,8 @@ public:
 	}
 	bool Pick(Set_Line& line)
 	{
-		for (auto& c : this->Crieteria)if((!line.IsValid()) || (!c.Test(line)))return false;
+		for (auto& c : this->Crieteria)if((!c.Test(line)))return false;
 		return true;
-	}
-	double GetAverageCapacity()
-	{
-		double sample_size = static_cast<double>(this->Terminals.size());
-		double capacity{ 0 };
-		for (auto& t : this->Terminals)
-		{
-			capacity = capacity + t.GetCapacity();
-		}
-		if (sample_size > 0){return capacity / sample_size;  }
-		else return 0.0;
-	}
-	double GetAverageCapacity_SISO()
-	{
-		double sample_size = static_cast<double>(this->Terminals.size());
-		double capacity_siso{ 0 };
-		for (auto& t : this->Terminals)
-		{
-			capacity_siso = capacity_siso + t.GetCapacitySISO();// cout << "Capacity_siso: " << capacity_siso << endl;
-		}
-		
-		if (sample_size > 0) {return capacity_siso / sample_size; }
-		else return 0.0;
-	}
-	Complex_matrix GetAverageH_matrix_1()
-	{
-		float sample_size = static_cast<float>(this->Terminals.size());
-		Complex_matrix H;
-		Complex_matrix gg_her;
-		Complex_matrix GG_Her;
-		Double_matrix Q_Mean;
-		Double_matrix Q;
-		for (auto& t : this->Terminals)
-		{
-			H.Increment(t.M);
-			Q.Increment(t.Q);
-			gg_her = t.M.Transposed() * (t.M.Conjugate());
-			GG_Her.Increment(gg_her);
-	//		cout << "*************** GG_HER*****************" << endl;
-	//		GG_Her.Show();
-	//		cout << "*************** t.Q*****************" << endl;
-	//		t.Q.Show();
-	//		cout << "*************** Q*****************" << endl;
-	//		Q.Show();
-	//		cout << "*************** t.M*****************" << endl;
-	//		t.M.Show();
-	//		cout << "*************** H*****************" << endl;
-	//		H.Show();
-		}
-		
-		Q_Mean = Q/static_cast<double>(sample_size);
-		this->AverageH = (H / Q);
-		this->AverageQ = Q_Mean;
-		this->AverageGG_Her = (GG_Her / static_cast<double>(sample_size));
-	//	cout << "Sample size: " << sample_size<< endl;
-		
-	//	cout<<"*************** Q_Mean*****************"<<endl;
-	//	Q_Mean.Show();
-	//	cout << "*************** H_Mean*****************" << endl;
-	//	AverageH.Show();
-	//	AverageGG_Her.Show();
-		return this->AverageH;
 	}
 	Complex_matrix GetAverageH_matrix_2()
 	{
@@ -239,16 +177,6 @@ public:
 		}
 		return false;
 	}
-	bool Status()
-	{
-		for (auto r : this->Terminals)
-			if (!r.IsValid())
-			{
-				cout << " INVALID TERMINAL FOUND " << endl;
-				return false;
-			}
-		return true;
-	}
 	void Reset()
 	{
 		this->Terminals.clear();
@@ -271,7 +199,6 @@ public:
 		cout << " CRITERIA TYPE       :" << setw(10);
 		cout << " LINKS IN THE SUBSET : " <<endl;
 		cout << " LINKS COUNT LISTED  : " << Terminals.size() << endl;
-	//	for (auto& t : this->Terminals) t.Show();
 	}
 public:
 	vector<Set_Line> Terminals				;

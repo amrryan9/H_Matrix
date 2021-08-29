@@ -11,7 +11,7 @@
 using namespace std;
 
 enum version { v3_0_01, v3_3_31 };
-enum configuration { MIMO, SISO };
+enum class configuration { MIMO, SISO };
 enum angle_unit{ RAD, DEG};
 enum EXPOSURE { ALL, NLOS, LOS,NON};
 enum FILES { CIR, DOD };

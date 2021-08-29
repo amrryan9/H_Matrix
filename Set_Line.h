@@ -6,6 +6,8 @@
 #include <matrix.h>
 #include"WirelessPower.h"
 #include"Ray.h"
+
+enum class PROPERITIES { EMPTY_PROP, TX_SET, RX_SET, TX_POINT, RX_POINT, DIRECT_DISTANCE, RADIAL_DISTANCE, HEIGHT, THETA, PHI, POWER_dBm };
 using namespace std;
 struct POSITION { 
 	double Distance;
@@ -21,11 +23,11 @@ struct POSITION {
 	}
 	float X()
 	{
-		return (static_cast<float>(R * std::cos(Phi))+500.0);
+		return (static_cast<float>(R * std::cos(Phi))+500.0);// to be changed to a generic area 
 	}
 	float Y()
 	{
-		return (static_cast<float>(R * std::sin(Phi))+500.0);
+		return (static_cast<float>(R * std::sin(Phi))+500.0);// to be changed to a generic area 
 	}
 	float Z()
 	{
@@ -77,18 +79,7 @@ struct PATHS
 		cout << " *************************** " << endl;
 		cout << " TX_ELEMENT : " << TX_ELEMENT << endl;
 		cout << " RX_ELEMENT : " << RX_ELEMENT << endl;
-		/*
-		cout << " PATH ID				:" ;
-		cout << " SOURCE ID				:" ;
-		cout << " POWER(W)				:" ;
-		cout << " PHSE(RAD)				:" ;
-		cout << " ARRIVAL TIME(S)		:" ;
-		cout << " ARRIVAL PHI(RAD)		:" ;
-		cout << " ARRIVAL THETA(RAD)	:" ;
-		cout << " DEPARTURE PHI(RAD)	:" ;
-		cout << " DEPARTURE THETA(RAD)	:" ;
-		*/
-		for (auto r : RAYS)
+		for (auto& r : RAYS)
 		{
 			cout << " KEY                   :" << KEY << setw(20);
 			cout << " PATH ID				:" << r.Path_ID <<setw(20);
@@ -158,18 +149,9 @@ public:
 		Receiver_Point		= r_point;
 		std::stringstream converter;
 		converter << t_set<< r_set<< t_point<< r_point; converter >> this->Key;
-
-		Gd = 0;
-		Gx = 0;
-		Gy = 0;
-		Gphi = 0;
-		Gtheta = 0;
-		GdGphi = 0;
-		Capacity_Set_Flag = false;
-	//	Permutation_Index = 0;
 		Expose = NLOS;
 	}
-	Set_Line(unsigned  t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned tx_ele, unsigned rx_ele,std::vector<Ray> pathes)
+	Set_Line(unsigned  t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned tx_ele, unsigned rx_ele,std::vector<Ray>& pathes)
 	{
 		Transmitter_Set = t_set;
 		Receiver_Set = r_set;
@@ -177,20 +159,11 @@ public:
 		Receiver_Point = r_point;
 		std::stringstream converter;
 		converter << t_set << r_set << t_point << r_point; converter >> this->Key; converter.clear();
-
-		Gd = 0;
-		Gx = 0;
-		Gy = 0;
-		Gphi = 0;
-		Gtheta = 0;
-		GdGphi = 0;
-		Capacity_Set_Flag = false;
-	//	Permutation_Index = 0;
 		std::string key1, key;
 		converter << tx_ele << rx_ele; converter >> key1;
 		key = this->Key + key1;
 		PATHS P(tx_ele, rx_ele);
-		for (auto p : pathes)
+		for (auto& p : pathes)
 		{
 			P.RAYS.push_back(p);
 		}
@@ -209,7 +182,7 @@ public:
 				if(this->Receiver_Set==r_set)
 					if (this->Receiver_Point == r_point)
 					{
-						for (auto p : this->Pathes)
+						for (auto& p : this->Pathes)
 						{
 							if (p.FOUND(tx_ele, rx_ele)) {
 								p.RAYS.empty();
@@ -219,111 +192,21 @@ public:
 							}
 						}
 						//// Add
-				//		cout << "CREATE A RAY WITH TX ELE:" << tx_ele << " AND RX_ELE:" << rx_ele << endl;
 						PATHS P(tx_ele, rx_ele); 
-						for (auto p : pathes)
+						for (auto& p : pathes)
 						{
 							P.RAYS.push_back(p);
 						}
 						P.SETKEY(key);
 						this->Pathes.push_back(P);
-					//	P.SHOW();
-					//	cout << " PATH ADDED" << endl;
 					}
-		
 	}
-	void SetCapacity()
-	{
-		if (this->IsValid())
-		{
-			Complex_matrix H = this->M;
-			Complex_matrix H_SISO;
-			Complex_matrix Power_Matrix;
-			for (int i = 0; i < this->M.Rows_Count; i++)Power_Matrix.AddItem(i, i, std::complex<double>(Tools::Transmitter_power, 0));// Power_Matrix.Show();
-			H.Transposed();
-			H_SISO.AddItem(0, 0, H.Average_All_Items());//H.GetItem(0, 0)
-			double Noise_Power = Tools::NoisePower; // Watt , for 300 K  put it -114 dbm 
-			double Receiver_Elements = static_cast<double>(this->M.Columns_Count);
-			double Transmitter_Elements = static_cast<double>(this->M.Rows_Count);
-			double Transmitter_Elements_SISO = 1;
-			
-		
-			
-		
-			Complex_matrix I_R = H.Identity_Row();
-			Complex_matrix I_R_SISO = H_SISO.Identity_Row();
-			Complex_matrix I_C = H.Identity_Column();
-			Complex_matrix P_T = this->Power.Transmitter_Diagonal();
-			Complex_matrix P_R = this->Power.Rceiver_Diagonal();
-			
-			////////////// RESULTS_3 ///////////////////
-	//		double SNR = this->Power.Rceiver_Average_Power() / Noise_Power;	// 
-	//		double SNR_SISO = this->Power.Power(0, 0) * Transmitter_Elements / Noise_Power; // multiplied by transmitter and receie elements //Receiver_Elements*  //
-	//		Complex_matrix C_3 = (I_R + H *  H.GetConjugateTransposed() * SNR * (1 / Transmitter_Elements));//bits/sec/Hz   // //Power_Matrix *
-			////////////// RESULTS_2 ///////////////////
-			double SNR = 1 / Noise_Power;	// this->Power.Rceiver_Average_Power()
-			double SNR_SISO = Tools::Transmitter_power * Transmitter_Elements / Noise_Power; // multiplied by transmitter and receie elements //Receiver_Elements*  //this->Power.Power(0,0) 
-			Complex_matrix C_3 = (I_R + H * Power_Matrix * H.ConjugateTransposed() * SNR);//bits/sec/Hz   // * (1 / Transmitter_Elements)
-			/////////////////////////////////////
-			Complex_matrix C_3_SISO = (I_R_SISO + H_SISO * H_SISO.ConjugateTransposed() * SNR_SISO );//bits/sec/Hz //* (1 / Transmitter_Elements_SISO)
-			this->Capacity = log2(abs(C_3.Determinant())); 
-			this->Capacity_SISO = log2(abs(C_3_SISO.Determinant()));
-		//	this->Capacity_SISO = log2(abs((1 + (SNR_SISO * pow(abs(H.GetItem(0, 0)), 2) / 1.0))));// Transmitter_Elements))));
-			// Write into a file
-			this->Capacity_Set_Flag = true;
-		}
-		else this->Capacity = 0.0;
-	}
-	void GetCapacity(std::vector<double>& capacity_array)
-	{
-		SetCapacity();
-		if (this->IsValid())capacity_array.push_back(this->Capacity);  // Only write valid ones
-	}
-	void GetCapacity(std::vector<double>& capacity_array , std::vector<double>& capacity_array_siso)
-	{
-		SetCapacity();
-		if (this->IsValid()) {
-			capacity_array.push_back(this->Capacity);  // Only write valid ones
-			capacity_array_siso.push_back(this->Capacity_SISO);  // Only write valid ones
-		}
-	}
-	double GetCapacity()
-	{
-		if(!Capacity_Set_Flag)SetCapacity(); return this->Capacity;
-	}
-	double GetCapacitySISO()
-	{
-		if (!Capacity_Set_Flag)SetCapacity();
-		 return this->Capacity_SISO;
-	}
-	/*
-	PATHS* GetPathes(unsigned  t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned tx_ele, unsigned rx_ele)
-	{
-		vector<Ray> Nothing;
-		if (this->Transmitter_Set == t_set)
-			if (this->Transmitter_Point == t_point)
-				if (this->Receiver_Set == r_set)
-					if (this->Receiver_Point == r_point)
-					{
-						for (auto& p : this->Pathes)
-						{
-							if (p.FOUND(tx_ele, rx_ele)) {
-								cout << " PATHES ATTACHED to TX_ELE: "<<tx_ele<<" and RX_ELE: "<<rx_ele<<" ARE FOUND " << endl;
-								return (&p);
-							}
-						}
-					}
-		return nullptr;
-	}
-	*/
 	PATHS& GetPathes(unsigned tx_ele, unsigned rx_ele)
 	{
 		PATHS Nothing;
 		for (auto& p : this->Pathes)
 		{
 			if (p.FOUND(tx_ele, rx_ele)) {
-			//	cout << " PATHES ATTACHED to TX_ELE: " << tx_ele<< " and RX_ELE: " << rx_ele << " ARE FOUND " << endl;
-			//	p.SHOWPATH();
 				return (p);
 			}
 		}
@@ -348,8 +231,7 @@ public:
 		std::cout << " POWER AT RX ELE	: " << endl; this->Power.Shrink().Show(POLAR);
 		std::cout << " POWER FROM TX ELE: " << endl; this->Power.Shrink_Horizontal().Show(POLAR);
 		std::cout << " POWER AVRAG AT RX: " << this->Power.Rceiver_Average_Power() << " WATTS  " << endl;
-		std::cout << " LINK CAPACITY    : " << this->Capacity                      << " B/S/HZ "        ;if (this->IsValid())std::cout << " :: LINK VALID ::" << endl; else std::cout << " :: LINK NOT VALID ::" << endl;
-		std::cout << " EXPOSURE         : " << Expose << endl;
+		std::cout << " EXPOSURE         : " << PrintExposure(Expose) << endl;
 		this->Position.Show();
 		this->M.Show(RECT);
 	}
@@ -361,10 +243,6 @@ public:
 	{
 		cout<<Power.GetItem(tx_element, rx_element)<<endl;
 	}
-	void ShowValid()
-	{
-		//if (M.IsValid())this->Show();
-	}
 	void ShowPathes()
 	{
 		for (auto p : this->Pathes)
@@ -374,20 +252,12 @@ public:
 	}
 	void ShowPathes(unsigned tx_ele, unsigned rx_ele)
 	{
-		//double PI = 22 / 7;
-		//cout << "PATH ID" << setw(20) << "SOURCE ID" << setw(20) << "DEPARTUER PHI" << setw(20) << "ARRIVAL PHI" << setw(20) << "POSITION PHI" << setw(20) << "DEPARTUER THETA" << setw(20) << "ARRIVAL THETA" << setw(20) << "POSITION THETA" << endl;
 		for (auto p : this->Pathes)
 		{
 			if (p.FOUND(tx_ele, rx_ele))
 			{
 				p.SHOWPATH();
-			//	for (auto& r : p.RAYS)
-				{
-				//	cout << "PATH ID" << setw(20) << "SOURCE ID" << setw(20) << "DEPARTUER PHI" << setw(20) << "ARRIVAL PHI" << setw(20) << "POSITION PHI"     << setw(20) << "DEPARTUER THETA"  << setw(20) << "ARRIVAL THETA" << setw(20) << "POSITION THETA" << endl;
-				//	cout << r.Path_ID  << setw(20) << r.Source_ID << setw(20) <<Tools::RoundAngles(DEG,r.Departure.Phi,1)  << setw(20) << Tools::RoundAngles(DEG, r.Arrival.Phi, 1)<< setw(20) << Tools::RoundAngles(DEG, this->Position.Phi, 1) << setw(20) << Tools::RoundAngles(DEG, r.Departure.Theta, 1) << setw(20) << Tools::RoundAngles(DEG, r.Arrival.Theta, 1) << setw(20) << Tools::RoundAngles(DEG, ((PI/2)+this->Position.Theta), 1) << endl;
-				//	r.ShowRay();
-				}
-			}//<< std::setprecision(2)
+			}
 		}
 	}
 	void ShowAllPathes()
@@ -395,36 +265,25 @@ public:
 		for (auto p : this->Pathes)
 			p.SHOWPATH();
 	}
-	bool IsValid()
-	{
-		return true;// this->M.IsValid();
-	}
-	void SetGd(size_t group)
-	{
-		this->Gd = group;
-	}
-	void SetGx(size_t group)
-	{
-		this->Gx = group;
-	}
-	void SetGy(size_t group)
-	{
-		this->Gy= group;
-	}
-	void SetGphi(size_t group)
-	{
-		this->Gphi = group;
-	}
-	void SetGtheta(size_t group)
-	{
-		this->Gtheta = group;
-	}
-	void SetGdGphi(size_t group)
-	{
-		this->GdGphi = group;
-	}
+	
 	EXPOSURE SetExposure()
 	{
+		bool goforward = false;
+		for (auto& p : this->Pathes)
+		{
+			if (p.RAYS.size() > 0)
+			{
+				goforward = true;
+				break;
+			}
+		}
+
+		if (!goforward)
+		{
+			this->Expose = NON;
+			return NON;
+		}
+
 		size_t LOS_Path_ID{1};
 		switch (Tools::WirelessInsiteVersion)
 		{
@@ -438,19 +297,14 @@ public:
 			LOS_Path_ID = 1;
 			break;
 		}
-	//	cout << " LOS PATH ID : " << LOS_Path_ID << " VERSION : "<< Tools::WirelessInsiteVersion <<endl;
 		for (auto& p : this->Pathes)
 		{
 			p.EXPO = NON;
-		//	p.SHOW();
 			for (auto& r : p.RAYS)
 			{
 				if (r.Path_ID== LOS_Path_ID)
 				{
-				//	r.Show();
 					p.EXPO = LOS;
-				//	ShowPathes(p.TX_ELEMENT, p.RX_ELEMENT);
-				//	r.Show();
 					break;
 				}
 				else if (r.Path_ID != -1)
@@ -461,7 +315,6 @@ public:
 				{
 					if (r.Interactions == 0)
 					{
-				//		cout << "LOS SISO" << endl;
 						p.EXPO = LOS;
 						break;
 					}
@@ -491,9 +344,79 @@ public:
 				this->Expose = NLOS;
 				return NLOS;
 			}
+		this->Expose = NON;
 		return NON;
 		
 	}
+	static std::string PrintExposure(EXPOSURE expose)
+	{
+		switch (expose)
+		{
+		case EXPOSURE::ALL:
+			return "ALL";
+		case EXPOSURE::LOS:
+			return "LOS";
+		case EXPOSURE::NLOS:
+			return "NLOS";
+		case EXPOSURE::NON:
+			return "NON";
+		}
+	}
+	bool CheckProperity(PROPERITIES properity, double max, double min=0.0)
+	{
+		switch (properity)
+		{
+		case PROPERITIES::EMPTY_PROP:
+			return true;
+			break;
+		case PROPERITIES::TX_SET:
+			if (static_cast<unsigned>(max) >= this->Transmitter_Set && static_cast<unsigned>(min) <= this->Transmitter_Set)return true;
+			else
+				return false;
+			break;
+		case PROPERITIES::RX_SET:
+			if (static_cast<unsigned>(max) >= this->Receiver_Set && static_cast<unsigned>(min) <= this->Receiver_Set)return true;
+			else
+				return false;
+			break;
+		case PROPERITIES::TX_POINT:
+			if (static_cast<unsigned>(max) >= this->Transmitter_Point && static_cast<unsigned>(min) <= this->Transmitter_Point)return true;
+			else
+				return false;
+			break;
+		case PROPERITIES::DIRECT_DISTANCE:
+			if (static_cast<double>(max) >= this->Position.Distance && static_cast<double>(min) <= this->Position.Distance)return true;
+			else
+				return false;
+			break;
+		case PROPERITIES::RADIAL_DISTANCE:
+			if (static_cast<double>(max) >= this->Position.R && static_cast<double>(min) <= this->Position.R)return true;
+			else
+				return false;
+			break;
+		case PROPERITIES::HEIGHT:
+			if (static_cast<double>(max) >= this->Position.Height && static_cast<double>(min) <= this->Position.Height)return true;
+			else
+				return false;
+			break;
+		case PROPERITIES::THETA:
+			if (static_cast<double>(max) >= this->Position.Theta && static_cast<double>(min) <= this->Position.Theta)return true;
+			else
+				return false;
+			break;
+		case PROPERITIES::PHI:
+			if (static_cast<double>(max) >= this->Position.Phi && static_cast<double>(min) <= this->Position.Phi)return true;
+			else
+				return false;
+			break;
+		case PROPERITIES::POWER_dBm:
+			if (static_cast<double>(max) >= this->Power.GetPower_dBm() && static_cast<double>(min) <= this->Power.GetPower_dBm())return true;
+			else
+				return false;
+			break;
+		}
+	}
+
 public:
 	std::string Key;
 	unsigned  Transmitter_Set;
@@ -504,17 +427,8 @@ public:
 	Double_matrix Q;
 	POSITION Position;
 	WirelessPower Power;
-	double Capacity;
-	double Capacity_SISO;
-	size_t Gd; // Distance Group Number
-	size_t Gx;
-	size_t Gy;
-	size_t Gphi;
-	size_t Gtheta;
-	size_t GdGphi;
-	bool Capacity_Set_Flag;
-//	size_t Permutation_Index;
 	std::vector<PATHS> Pathes;
 	EXPOSURE Expose;
 };
+
 
