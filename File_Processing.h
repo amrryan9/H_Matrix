@@ -234,7 +234,8 @@ public:
 					{
 						for (auto& s : MIMO_H_MATRIX.S)
 						{
-							p=Permutate(i_terminal, SetSize);
+						//	p=Permutate(i_terminal, SetSize);
+							p = i_terminal;
 							// Adding Position to Set_Line ///////////////////////////////////////
 							s.Position.Distance = Terminal_data_set.at(p).Distance;
 							s.Position.Height = Terminal_data_set.at(p).Height;
@@ -258,7 +259,7 @@ public:
 		MIMO_H_MATRIX.SetExposure();
 		
 	//	cout << " Total Number of Points" << MIMO_H_MATRIX.S.size() << " Number of " << " LOS" << " Points is " << MIMO_H_MATRIX.GetEXPO(EXPOSURE::LOS).S.size() << endl;
-		MIMO_H_MATRIX.PermutateBack();
+	//	MIMO_H_MATRIX.PermutateBack();
 	//	MIMO_H_MATRIX.Show();
 		return MIMO_H_MATRIX;// .GetEXPO(exposure);
 	}

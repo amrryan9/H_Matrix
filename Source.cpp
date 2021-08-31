@@ -18,5 +18,5 @@ int main()
 //	zero_points_nlos = S.CreatOneDistanceSubsets(true, NLOS);
 
 	S = f->read_directory("D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/" + Tools::ConvertToString(847) + "/MIMO_BS_UAV_TERMINALS/cir");
-	S.GetEXPO(EXPOSURE::NON).ShowRXPoints();
+	S.GetEXPO(EXPOSURE::NLOS).Filter(PROPERITIES::POWER_dBm, 0, -32, PROPERITIES::DIRECT_DISTANCE, 112, 12.9, PROPERITIES::RADIAL_DISTANCE, 25)->WriteRXPoints("./trail.csv", POLAR);// ShowRXPoints(POLAR);
 }

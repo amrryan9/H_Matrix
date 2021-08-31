@@ -541,6 +541,102 @@ public:
 			}
 		}
 	}
+	void WriteRXPoints(std::string file_out,ComplexForm form = RECT)
+	{
+		// this function writes the Receiver Points show to a .csv file the input file name is assumed t have the extension already
+		std::string parent_directory = file_out;
+		size_t position = file_out.find_last_of("/");
+		std::string file_name = parent_directory.substr(position);
+		parent_directory.erase(position, file_name.size());
+		file_name.erase(0, 1);
+		if (!std::filesystem::exists(parent_directory))
+		{
+			if (std::filesystem::create_directory(parent_directory))cout << parent_directory << " Directory Created" << endl; else { cout << parent_directory << " Directory can't be created " << endl; exit(0); }
+		}
+		std::ofstream out{ file_out , std::ios_base::out | std::ios_base::trunc };//+ extension
+		std::ostream_iterator<string> out_iter2{ out, " " };
+
+		vector<std::string>row;
+		std::stringstream converter;
+		std::string Line{""};
+		string i_1,j_1;
+		/// Show The world
+		size_t rx_elements, tx_elements;
+		size_t index{ 1 };	
+			
+		if (this->S.size() > 0)
+		{
+			rx_elements = this->S.at(0).M.Columns_Count;
+			tx_elements = this->S.at(0).M.Rows_Count;
+			Line = "item #,RX Point #,RX Set#,Position,,,,Power(dBm),";
+			for (size_t i = 1; i < rx_elements; i++)Line = Line + ",";
+			Line = Line + "Exposure,TX set,TX Point,H_Matrix" + "\n";
+			row.push_back(Line); Line.clear();
+			Line = ",,,D,R,Phi,Theta";
+			for (size_t i = 0; i < rx_elements; i++)
+			{
+				converter << (i + 1); converter >> i_1; converter.clear();
+				Line = Line + ",Rx Ele(" + i_1 + ")";
+			}
+			Line = Line + ",,,";
+			i_1.clear();
+			for (size_t i = 0; i < tx_elements; i++)
+				for (size_t j = 0; j < rx_elements; j++)
+				{
+					converter << (i + 1); converter >> i_1; converter.clear();
+					converter << (j + 1); converter >> j_1; converter.clear();
+					Line = Line + ",h("+i_1+"-"+j_1+")" ;//\",\"
+				}	
+		row.push_back(Line + "\n"); Line.clear();
+		string index_,l_Receiver_Point, l_Receiver_Set, l_Position_DirectDistance, l_Position_R, l_Position_Phi, l_Position_Theta, l_Transmitter_Set, l_Transmitter_Point,power_;
+		
+		for (auto l : this->S)
+		{
+			converter << index;							converter >> index_;					converter.clear();
+			converter << l.Receiver_Point;				converter >> l_Receiver_Point;			converter.clear();
+			converter << l.Receiver_Set;				converter >> l_Receiver_Set;			converter.clear();
+			converter << l.Position.DirectDistance();	converter >> l_Position_DirectDistance; converter.clear();
+			converter << l.Position.Phi;				converter >> l_Position_Phi;			converter.clear();
+			converter << l.Position.Theta;				converter >> l_Position_Theta;			converter.clear();
+			converter << l.Position.R;					converter >> l_Position_R;				converter.clear();
+			converter << l.Transmitter_Set;				converter >> l_Transmitter_Set;			converter.clear();
+			converter << l.Transmitter_Point;			converter >> l_Transmitter_Point;		converter.clear();
+
+			Line= index_+","+l_Receiver_Point +"," + l_Receiver_Set + "," + l_Position_DirectDistance + "," + l_Position_R +"," + l_Position_Phi +","+ l_Position_Theta;
+			for (size_t i = 0; i < rx_elements; i++)
+			{
+				converter << Tools::Round2(l.Power.Shrink().GetItem(0, i), 3); converter >> power_; converter.clear();
+				Line = Line +"," + power_;
+			}
+			switch (l.Expose)
+			{
+			case EXPOSURE::NON:
+				Line=Line+"," + "NON";
+				break;
+			case EXPOSURE::LOS:
+				Line=Line+ "," + "LOS";
+				break;
+			case EXPOSURE::NLOS:
+				Line=Line+ "," + "NLOS";
+				break;
+			case EXPOSURE::ALL:
+				Line=Line+ "," + "ALL";
+				break;
+			}
+			Line= Line+ "," + l_Transmitter_Set + "," + l_Transmitter_Point;
+			for (size_t i = 0; i < tx_elements; i++)
+				for (size_t j = 0; j < rx_elements; j++)
+				{
+					Line=Line+ "," + Tools::PrintComplex(l.M.GetItem(i, j), form, 3);
+				}
+			row.push_back(Line + "\n"); Line.clear();
+			index++;
+			}
+		}
+		std::copy(std::begin(row), std::end(row), out_iter2);
+		out_iter2 = "\n";
+		row.clear();
+	}
 
 	Set* Filter(PROPERITIES p0,double p0_max, double p0_min=0.0, PROPERITIES p1= PROPERITIES::EMPTY_PROP, double p1_max=0.0, double p1_min = 0.0, PROPERITIES p2 = PROPERITIES::EMPTY_PROP,double p2_max = 0.0, double p2_min = 0.0, PROPERITIES p3 = PROPERITIES::EMPTY_PROP, double p3_max = 0.0, double p3_min = 0.0, PROPERITIES p4 = PROPERITIES::EMPTY_PROP, double p4_max = 0.0, double p4_min = 0.0, PROPERITIES p5 = PROPERITIES::EMPTY_PROP, double p5_max = 0.0, double p5_min = 0.0, PROPERITIES p6 = PROPERITIES::EMPTY_PROP, double p6_max = 0.0, double p6_min = 0.0, PROPERITIES p7 = PROPERITIES::EMPTY_PROP, double p7_max = 0.0, double p7_min = 0.0, PROPERITIES p8 = PROPERITIES::EMPTY_PROP, double p8_max = 0.0, double p8_min = 0.0, PROPERITIES p9 = PROPERITIES::EMPTY_PROP, double p9_max = 0.0, double p9_min = 0.0)
 	{
