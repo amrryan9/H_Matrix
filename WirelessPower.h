@@ -45,6 +45,21 @@ public:
 		}
 		return m;
 	}
+	Double_matrix PowerdBm()
+	{
+		size_t r{ 0 }, c{ 0 };
+		Double_matrix m;
+		for (auto row : this->V.Rows)
+		{
+			for (auto item : row)
+			{
+				m.AddItem(r, c, 10*log10(pow(abs(item), 2)*1000));
+				c++;
+			}
+			r++;
+		}
+		return m;
+	}
 	Double_matrix Phase()
 	{
 		size_t r, c{ 0 };
@@ -75,11 +90,12 @@ public:
 		}
 		return m;
 	}
-	Complex_matrix  Shrink()// Shrink don the matrix ito one row contains the sum of columns
+	Double_matrix  Shrink()// Shrink don the matrix ito one row contains the sum of columns
 	{
 		complex<double> s = complex<double>(0, 0);
 		Complex_matrix S;
-		
+	//	cout<<" **** VOLATGE MATRIX ****"<<endl;
+	//	V.Show();
 		for (size_t j = 0; j < V.Columns_Count; j++)
 		{
 			for (size_t i = 0; i < V.Rows_Count; i++)
@@ -89,7 +105,8 @@ public:
 			S.AddItem(0, j, s);
 			s = complex<double>(0, 0);
 		}
-		return WirelessPower(S).PowerPhasor();
+	//	WirelessPower(S).Show();
+		return WirelessPower(S).PowerdBm();
 	}
 	Complex_matrix  Shrink_Horizontal()// Shrink don the matrix ito one row contains the sum of columns
 	{
@@ -103,6 +120,22 @@ public:
 				s = s + V.GetItem(j, i);
 			}
 			S.AddItem(j, 0, s);
+			s = complex<double>(0, 0);
+		}
+		return WirelessPower(S).PowerPhasor();
+	}
+	Complex_matrix  Shrink_Vertical()// Shrink don the matrix ito one row contains the sum of columns
+	{
+		complex<double> s = complex<double>(0, 0);
+		Complex_matrix S;
+
+		for (size_t j = 0; j < V.Columns_Count; j++)
+		{
+			for (size_t i = 0; i < V.Rows_Count; i++)
+			{
+				s = s + V.GetItem(i, j);
+			}
+			S.AddItem(0, j, s);
 			s = complex<double>(0, 0);
 		}
 		return WirelessPower(S).PowerPhasor();
@@ -124,7 +157,7 @@ public:
 	}
 	Complex_matrix  Rceiver_Diagonal()// creat diagonal matrix of the transmitted power per transmitter
 	{
-		Complex_matrix  transmited_power = this->Shrink();
+		Complex_matrix  transmited_power = this->Shrink_Vertical();
 		Complex_matrix  d;
 		size_t n = transmited_power.Columns_Count;
 		for (size_t i = 0; i < n; i++)
@@ -139,7 +172,7 @@ public:
 	}
 	double Rceiver_Average_Power()// Return average power received by a teriminal
 	{
-		Complex_matrix  transmited_power = this->Shrink();
+		Complex_matrix  transmited_power = this->Shrink_Vertical();
 		size_t n = transmited_power.Columns_Count;
 		double p{ 0.0 };
 		for (size_t i = 0; i < n; i++)p = p + abs(transmited_power.GetItem(0, i));

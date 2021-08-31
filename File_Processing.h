@@ -224,13 +224,13 @@ public:
 		//*****************************************************************************
 		CreateResultsFolder(file_in_teminals_positions, file_in_transmitter_power);
 		//*****************************************************************************
-		size_t p{ 0 };
+		size_t p = 0;
 		size_t i_terminal = 0;
 		size_t SetSize = MIMO_H_MATRIX.S.size();
 		if (MIMO_H_MATRIX.Transmitters.size() == 1)
 			if (MIMO_H_MATRIX.Transmitters.at(0).T_R_Points.size() == 1)
 				if (MIMO_H_MATRIX.Receivers.size() == 1)
-					if (MIMO_H_MATRIX.S.size() == Terminal_data_set.size())
+					if (MIMO_H_MATRIX.S.size() <= Terminal_data_set.size()) // ==
 					{
 						for (auto& s : MIMO_H_MATRIX.S)
 						{
@@ -241,7 +241,6 @@ public:
 							s.Position.Theta = Terminal_data_set.at(p).Theta;
 							s.Position.Phi = Terminal_data_set.at(p).Phi;
 							s.Position.R = Terminal_data_set.at(p).R;
-						//	s.Permutation_Index = p;
 							//////////////////////////////////////////////////////////////////////
 							i_terminal++;
 						}
@@ -257,7 +256,7 @@ public:
 		}	
 		//****************************************************************************************
 		MIMO_H_MATRIX.SetExposure();
-		MIMO_H_MATRIX.GetEXPO(EXPOSURE::LOS);
+		
 	//	cout << " Total Number of Points" << MIMO_H_MATRIX.S.size() << " Number of " << " LOS" << " Points is " << MIMO_H_MATRIX.GetEXPO(EXPOSURE::LOS).S.size() << endl;
 		MIMO_H_MATRIX.PermutateBack();
 	//	MIMO_H_MATRIX.Show();

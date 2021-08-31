@@ -149,7 +149,7 @@ public:
 		Receiver_Point		= r_point;
 		std::stringstream converter;
 		converter << t_set<< r_set<< t_point<< r_point; converter >> this->Key;
-		Expose = NLOS;
+		Expose = NON;
 	}
 	Set_Line(unsigned  t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned tx_ele, unsigned rx_ele,std::vector<Ray>& pathes)
 	{
@@ -169,7 +169,7 @@ public:
 		}
 		P.SETKEY(key);
 		this->Pathes.push_back(P);
-		Expose = NLOS;
+		Expose = NON;
 	}
 	void SetPathes(unsigned  t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned tx_ele, unsigned rx_ele, std::vector<Ray> pathes)
 	{

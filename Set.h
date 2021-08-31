@@ -88,6 +88,7 @@ public:
 		this->S.push_back(*l);
 		return l;
 	}
+	/*
 	void AddItemPower(unsigned t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned r, unsigned c, double total_power, double power_phase)
 	{
 		std::string key;
@@ -101,6 +102,7 @@ public:
 			}
 		}
 	}
+	*/
 	bool UpdateItem(std::vector<Ray> pathes_angles, unsigned t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned r, unsigned c)
 	{
 		//Update rays with angles 
@@ -229,13 +231,7 @@ public:
 		return false;
 	}
 
-	void SetExposure()
-	{
-		for (auto& s : this->S)
-		{
-			s.SetExposure();
-		}
-	}
+	
 	size_t GetSize()
 	{
 		if (this->S.size() == this->Receivers.size())
@@ -287,15 +283,22 @@ public:
 		cout << " PATHES ARE NOT FOUND !!!!!!!!!!" << endl;
 		return Nothing;
 	}
+	void SetExposure()
+	{
+		for (auto& s : this->S)
+		{
+			s.SetExposure();
+		}
+	}
 	Set GetEXPO(EXPOSURE check)
 	{
 		size_t i_index{ 0 };
 		Set* SS=new Set();
-		if (check != EXPOSURE::ALL && check !=EXPOSURE::NON)
+		if (check != EXPOSURE::ALL )//&& check !=EXPOSURE::NON
 		{
 			for(auto& l : this->S)
 			{
-				if (l.SetExposure() == check) 
+				if (l.Expose == check) //.SetExposure()
 					SS->AddItem(l);
 			}
 			cout << " Total Number of Points is : " << this->S.size() << " . Number of " << Set_Line::PrintExposure(check) << " Points is " << SS->S.size() << endl;
@@ -372,7 +375,7 @@ public:
 		}
 		cout << " Number of Terminals :" << S_size << endl;
 	}
-	void ShowPower(size_t tx_set, size_t tx_pt, size_t tx_ele, size_t rx_set, size_t rx_pt, size_t rx_ele)// Print power as it would appear in wireless insite. from the transmitter Element to receiver Element for all terminal points
+	void ShowPower(size_t tx_set, size_t tx_pt, size_t tx_ele, size_t rx_set, size_t rx_pt, size_t rx_ele)   // Print power as it would appear in wireless insite. from the transmitter Element to receiver Element for all terminal points
 	{
 		cout << " Power OutPut" << endl;
 		complex<double> z;
@@ -414,11 +417,11 @@ public:
 		switch (conf)
 		{
 		case configuration::MIMO:
-			cout << " " << i << setw(20) << "# X(m)" << setw(20) << "Y(m)" << setw(20) << "Z(m)" << setw(20) << "Distance(m)" << setw(20) << "Power(dBm)" << setw(20) << "Phase(deg)" << endl;
+			cout << " " << i << setw(20) << "# X(m)" << setw(20) << "Y(m)" << setw(20) << "Z(m)" << setw(20) << "Distance(m)" << setw(40) << "Power(dBm)" << setw(40) << "Phase(deg)" << endl;
 			cout << "________________________________________________________________________________________________________________________________________________" << endl;
 			for (auto& s : this->S)
 			{
-				cout << " " << i << setw(20) << s.Position.X() << setw(20) << s.Position.Y() << setw(20) << s.Position.Z() << setw(20) << s.Position.DirectDistance() << setw(20); s.ShowPower(0, 0);
+				cout << " " << i << setw(20) << s.Position.X() << setw(20) << s.Position.Y() << setw(20) << s.Position.Z() << setw(40) << s.Position.DirectDistance() << setw(40); s.ShowPower(0, 0);
 				i++;
 			}
 			cout << "________________________________________________________________________________________________________________________________________________" << endl;
@@ -485,6 +488,57 @@ public:
 			cout <<     " NLOS POINT # :" << setw(4) << i << endl;
 
 			i++;
+		}
+	}
+
+	void ShowRXPoints(ComplexForm form = RECT)
+	{
+		/// Show The world
+		size_t rx_elements, tx_elements;
+		size_t index{ 1 };
+		cout << setw(10) << "item #  " << setw(10) << "RX Point #" << setw(10) << "RX Set#"<<setw(32)<<"Position            " << setw(26) << "Power(dBm)     " << setw(16) << "Exposure" << setw(15) << "TX set" << setw(15) << "TX Point" << setw(100) << "H_Matrix                              " << endl;
+		cout << setw(27) << " " << setw(8) << "D  " << setw(8) << "R " << setw(8) << "Phi " << setw(8) << "Theta";
+		if (this->S.size() > 0)
+		{
+			rx_elements=this->S.at(0).M.Columns_Count;
+			tx_elements = this->S.at(0).M.Rows_Count;
+			for (size_t i = 0; i < rx_elements; i++)
+				cout <<setw(static_cast<size_t>(26.0/ static_cast<float>(rx_elements)))<< "Rx Ele(" << i + 1 << ")";
+			cout << setw(46) << " ";
+			for (size_t i = 0; i < tx_elements; i++)
+				for (size_t j = 0; j < rx_elements; j++)
+					cout << setw(static_cast<size_t>(150.0 / (static_cast<float>(rx_elements)* static_cast<float>(tx_elements)))) << "    h(" << i + 1 <<","<<j+1 << ")     ";
+			cout << endl;
+			for (auto l : this->S)
+			{
+				cout << setw(5) << index << setw(10) << l.Receiver_Point << setw(12) << l.Receiver_Set << setw(8) << l.Position.DirectDistance() << setw(8) << l.Position.R << setw(8) << l.Position.Phi << setw(8) << l.Position.Theta;
+				for (size_t i = 0; i < rx_elements; i++)
+					cout << setw(static_cast<size_t>(26.0 / static_cast<float>(rx_elements))+2) << Tools::Round2(l.Power.Shrink().GetItem(0, i), 3);
+				switch (l.Expose)
+				{
+				case EXPOSURE::NON:
+					cout << setw(12) << "NON";
+					break;
+				case EXPOSURE::LOS:
+					cout << setw(12) << "LOS";
+					break;
+				case EXPOSURE::NLOS:
+					cout << setw(12) << "NLOS";
+					break;
+				case EXPOSURE::ALL:
+					cout << setw(12) << "ALL";
+					break;
+				}
+				cout << setw(16) << l.Transmitter_Set << setw(12) << l.Transmitter_Point;
+				cout << setw(10) << " ";
+				for (size_t i = 0; i < tx_elements; i++)
+					for (size_t j = 0; j < rx_elements; j++)
+					{
+						cout << setw(static_cast<size_t>(200.0 / (static_cast<float>(rx_elements) * static_cast<float>(tx_elements)))) << Tools::PrintComplex(l.M.GetItem(i, j), form, 3)<<"  ";
+					}
+				cout << endl;
+				index++;
+			}
 		}
 	}
 
