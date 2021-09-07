@@ -33,7 +33,8 @@ struct ANTENNA_TYPE
 	std::string Name;
 	std::string Type;
 	std::string Polarization;
-	char Index; // Unique index for each antenna type-configuration(Object)
+	size_t  Index; // Unique index for each antenna type-configuration(Object)
+	size_t Carrier_Index;
 	ANTENNA_TYPE()
 	{
 		Name = "";
@@ -41,7 +42,7 @@ struct ANTENNA_TYPE
 		Index = 0;
 		Polarization ="vertical";
 	}
-	ANTENNA_TYPE(std::string name, std::string type, char index, std::string polarization = "vertical")
+	ANTENNA_TYPE(std::string name, std::string type, size_t index, std::string polarization = "vertical")
 	{
 		Name = name;
 		Type = type;
@@ -53,6 +54,7 @@ struct ANTENNA_ELEMENT
 {
 	ANTENNA_TYPE* ElementType;
 	float Rotation_x, Rotation_y, Rotation_z, Position_x, Position_y, Position_z;
+	size_t Carrier_Index;
 	ANTENNA_ELEMENT()
 	{
 		ElementType;
@@ -63,22 +65,33 @@ struct ANTENNA_ELEMENT
 		Position_y = 0.0;
 		Position_z = 0.0;
 		ElementType = new ANTENNA_TYPE();
+		Carrier_Index=0;
 	}
-	ANTENNA_ELEMENT(ANTENNA_TYPE* element_type)
+	ANTENNA_ELEMENT(ANTENNA_TYPE* element_type, size_t carrier_index)
 	{
-		if(element_type!=nullptr)ElementType = element_type;
+		if (element_type != nullptr)
+		{
+			ElementType = element_type;
+			ElementType->Carrier_Index = carrier_index;
+		}
 		Rotation_x = 0.0;
 		Rotation_y = 0.0; 
 		Rotation_z = 0.0; 
 		Position_x = 0.0; 
 		Position_y = 0.0; 
 		Position_z = 0.0;
+		Carrier_Index = carrier_index;
 	}
-	ANTENNA_ELEMENT(ANTENNA_TYPE* element_type, float R_x, float R_y, float R_z, float P_x, float P_y, float P_z)
+	ANTENNA_ELEMENT(ANTENNA_TYPE* element_type, size_t carrier_index, float R_x, float R_y, float R_z, float P_x, float P_y, float P_z)
 	{
-		if (element_type != nullptr)ElementType = element_type;
+		if (element_type != nullptr)
+		{
+			ElementType = element_type;
+			ElementType->Carrier_Index = carrier_index;
+		}
 		SetPosition(P_x, P_y, P_z);
 		SetRotation(R_x, R_y, R_z);
+		Carrier_Index = carrier_index;
 	}
 	void SetPosition(float x, float y, float z)
 	{
@@ -97,23 +110,45 @@ struct ANTENNA_ARRAY // Every antenna set is an array even if it is a single ele
 {
 	std::string Name;
 	std::string Description;
-	char Index; // Unique index for each antenna type-configuration(Object)
+	size_t Index; // Unique index for each antenna type-configuration(Object)
+	size_t Carrier_Index;
 	vector<ANTENNA_ELEMENT*>Elements;
 	ANTENNA_ARRAY()
 	{
 		Name = "";
 		Description = "";
 		Index = 0;
+		Carrier_Index = 0;
 	}
-	ANTENNA_ARRAY(std::string name,char index,std::string description="")
+	ANTENNA_ARRAY(std::string name,size_t index, size_t carrier_index,std::string description="")
 	{
 		Name = name;
 		Description = description;
 		Index = index;
+		Carrier_Index = carrier_index;
 	}
 	void AddElement(ANTENNA_TYPE* p_element_type, float R_x, float R_y, float R_z, float P_x, float P_y, float P_z)
 	{
-		Elements.push_back(new ANTENNA_ELEMENT(p_element_type, R_x, R_y, R_z, P_x, P_y, P_z));
+		Elements.push_back(new ANTENNA_ELEMENT(p_element_type, Carrier_Index, R_x, R_y, R_z, P_x, P_y, P_z));
+	}
+	void SetCarrierIndex(size_t carrier_index)
+	{
+		Carrier_Index = carrier_index;
+		for (auto ele : Elements)
+		{
+			if (ele != nullptr)
+			{
+				ele->Carrier_Index = carrier_index;
+				if (ele->ElementType != nullptr)
+				{
+					ele->ElementType->Carrier_Index = carrier_index;
+				}
+				else
+					cout << " ERROR : Antenna Type is not set ." << endl;
+			}
+			else
+				cout << " ERROR : Antenna Element is not set ." << endl;
+		}
 	}
 };
 struct RECEIVER
@@ -123,11 +158,19 @@ struct RECEIVER
 		NoiseFigure = 3.00000;
 		Carrier = new CARRIER();
 		Antenna_Array = new ANTENNA_ARRAY();
+		Antenna_Array->SetCarrierIndex(Carrier->Index);
 	}
 	RECEIVER(CARRIER* carrier, ANTENNA_ARRAY* antenna_array, float noisefigure = 3.00000)
 	{
-		if (carrier != nullptr)Carrier = carrier;
-		if (antenna_array != nullptr)Antenna_Array = antenna_array;
+		if (carrier != nullptr)
+		{
+			Carrier = carrier;
+			if (antenna_array != nullptr)
+			{
+				Antenna_Array = antenna_array;
+				Antenna_Array->SetCarrierIndex(Carrier->Index);
+			}
+		}
 		NoiseFigure = noisefigure;
 	}
 	CARRIER* Carrier;
@@ -141,11 +184,19 @@ struct TRANSMITTER
 		Power_dBm = 0.0;
 		Carrier = new CARRIER();
 		Antenna_Array = new ANTENNA_ARRAY();
+		Antenna_Array->SetCarrierIndex(Carrier->Index);
 	}
 	TRANSMITTER(CARRIER* carrier, ANTENNA_ARRAY* antenna_array, float power_dBm = 0)
 	{
-		if (carrier != nullptr)Carrier = carrier;
-		if (antenna_array != nullptr)Antenna_Array = antenna_array;
+		if (carrier != nullptr)
+		{
+			Carrier = carrier;
+			if (antenna_array != nullptr)
+			{
+				Antenna_Array = antenna_array;
+				Antenna_Array->SetCarrierIndex(Carrier->Index);
+			}
+		}
 		Power_dBm = power_dBm;
 	}
 	CARRIER* Carrier;
@@ -175,31 +226,31 @@ struct POINTS
 	POINTS()
 	{
 		Project_id = 0;
-		Tx = new TRANSMITTER();
+		TX = new TRANSMITTER();
 		RX = new RECEIVER();
 		Transmitter_exist = false;
 		Receiver_exist = false;
 		Name = "";
 	}
-	POINTS(char index, string name = "")
+	POINTS(size_t index, string name = "")
 	{
 		Project_id = index;
-		Tx = new TRANSMITTER();
+		TX = new TRANSMITTER();
 		RX = new RECEIVER();
 		Transmitter_exist = false;
 		Receiver_exist = false;
 		Name = name;
 	}
-	POINTS(char index, string name,TRANSMITTER* tx, RECEIVER* rx=nullptr)
+	POINTS(size_t index, string name,TRANSMITTER* TX, RECEIVER* rx=nullptr)
 	{
 		Project_id = index; Name = name;
-		if (tx != nullptr) { Tx = tx; Transmitter_exist = true; }else { Tx = new TRANSMITTER(); Transmitter_exist = false; }
+		if (TX != nullptr) { TX = TX; Transmitter_exist = true; }else { TX = new TRANSMITTER(); Transmitter_exist = false; }
 		if (rx != nullptr) { RX = rx; Receiver_exist = true; }else { RX = new RECEIVER(); Receiver_exist = false; }
 	}
-	POINTS(char index, string name, RECEIVER* rx, TRANSMITTER* tx = nullptr)
+	POINTS(size_t index, string name, RECEIVER* rx, TRANSMITTER* TX = nullptr)
 	{
 		Project_id = index; Name = name;
-		if (tx != nullptr) { Tx = tx; Transmitter_exist = true; }else {Tx = new TRANSMITTER(); Transmitter_exist = false;}
+		if (TX != nullptr) { TX = TX; Transmitter_exist = true; }else {TX = new TRANSMITTER(); Transmitter_exist = false;}
 		if (rx != nullptr) { RX = rx; Receiver_exist = true; }else { RX = new RECEIVER(); Receiver_exist = false; }
 	}
 	size_t GetNumberOfPoints()
@@ -219,8 +270,8 @@ struct POINTS
 		return false;
 	}
 	std::string Name;
-	char Project_id;
-	TRANSMITTER* Tx;
+	size_t Project_id;
+	TRANSMITTER* TX;
 	RECEIVER* RX;
 	vector< POINT_LOCATION*>Point_locations;
 	bool Transmitter_exist;
@@ -260,7 +311,7 @@ public:
 	}
 	void AddNewAntennaArray(std::string name, std::string description ="")
 	{
-		this->AntennaArrays.push_back(new ANTENNA_ARRAY(name,Antenna_Array_Index, description));
+		this->AntennaArrays.push_back(new ANTENNA_ARRAY(name,Antenna_Array_Index,0, description));
 		Antenna_Array_Index++;
 	}
 	bool AddAntennaArray(ANTENNA_ARRAY* p_antenna_array)
@@ -339,11 +390,55 @@ public:
 		}
 		return false;
 	}
+	void Show()
+	{
+		for (auto& p : PointsSets)
+		{
+			cout << "Points Project_id : " << static_cast<size_t>(p->Project_id) << endl;
+			
+			if (p->Transmitter_exist)
+			{
+				cout << "	Transmitter power at each antenna item : " << p->TX->Power_dBm << endl;
+				cout << "		Carrier Frequency :                  " << p->TX->Carrier->Frequency << " Hz" << endl;
+				cout << "		Carrier Bandwidth :                  " << p->TX->Carrier->Band_Width << " Hz" << endl;
+				cout << "		Antenna Array index :				 " << static_cast<size_t>(p->TX->Antenna_Array->Index) << endl;
+				for (auto a_element : p->TX->Antenna_Array->Elements)
+				{
+					cout << "			Elements Position At : " << a_element->Position_x << "," << a_element->Position_y << "," << a_element->Position_z << endl;
+					cout << "			Elements Rotation At : " << a_element->Rotation_x << "," << a_element->Rotation_y << "," << a_element->Rotation_z << endl;
+					cout << "				Element antenna type Index : " << static_cast<size_t>(a_element->ElementType->Index) << endl;
+					cout << "				Element antenna description : " << a_element->ElementType->Name << endl;
+					cout << "				Element antenna type : " << a_element->ElementType->Type << endl;
+					cout << "				Element antenna Polarization : " << a_element->ElementType->Polarization << endl;
+				}
+			}
+			if (p->Receiver_exist)
+			{
+				cout << "	Receiver Noise Figure : " << p->RX->NoiseFigure << endl;
+				cout << "		Carrier Frequency :                  " << p->RX->Carrier->Frequency << " Hz" << endl;
+				cout << "		Carrier Bandwidth :                  " << p->RX->Carrier->Band_Width << " Hz" << endl;
+				cout << "		Antenna Array index :				 " << p->RX->Antenna_Array->Index << endl;
+				for (auto a_element : p->RX->Antenna_Array->Elements)
+				{
+					cout << "			Elements At : " << a_element->Position_x << "," << a_element->Position_y << "," << a_element->Position_z << endl;
+					cout << "			Elements Rotation At : " << a_element->Rotation_x << "," << a_element->Rotation_y << "," << a_element->Rotation_z << endl;
+					cout << "				Element antenna type Index : " << static_cast<size_t>(a_element->ElementType->Index) << endl;
+					cout << "				Element antenna description : " << a_element->ElementType->Name << endl;
+					cout << "				Element antenna type : " << a_element->ElementType->Type << endl;
+					cout << "				Element antenna Polarization : " << a_element->ElementType->Polarization << endl;
+				}
+			}
+			for (auto& location : p->Point_locations)
+			{
+				cout << "		Point at : " << location->X << "," << location->Y << "," << location->Z << endl;
+			}
+		}
+	}
 public:
-	static char Antenna_Type_Index;
-	static char Antenna_Array_Index;
-	static char Carrier_Index;
-	static char Points_Set_Index;
+	static size_t Antenna_Type_Index;
+	static size_t Antenna_Array_Index;
+	static size_t Carrier_Index;
+	static size_t Points_Set_Index;
 	vector<ANTENNA_TYPE*>AntennaTypes;
 	vector<ANTENNA_ARRAY*>AntennaArrays;
 	vector<CARRIER*>Carriers;

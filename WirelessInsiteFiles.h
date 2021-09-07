@@ -12,6 +12,15 @@ class WirelessInsiteFiles
 {
 public:
 	WirelessInsiteFiles() {}
+	bool SetCommunicationSystem(CommunicationSystem* system)
+	{
+		if (system != nullptr)
+		{
+			this->CommSystem = *system;
+			return true;
+		}
+		return false;
+	}
 	void WriteFiles_1(std::string file_out)
 	{
 
@@ -28,14 +37,14 @@ public:
 		std::ostream_iterator<string> out_iter2{ out, " " };
 		//****************************************************************************************
 		vector<std::string>row;
-		std::stringstream converter;
-		std::string Line{ "" };
+	//	std::stringstream converter;
+	//	std::string Line{ "" };
 		//****************************************************************************************
 		// Writing The file
 		//********************** BEGIN SET OF POINTS *********************************
 		for (auto& p_set : CommSystem.PointsSets)
 		{
-			if (p_set = nullptr)ConfigureSetOfPoints(row, *p_set);
+			if (p_set != nullptr)ConfigureSetOfPoints(row, *p_set);
 			else
 				cout << " ERROR : Points Set Null pointer AT :  " << endl;
 		}
@@ -45,6 +54,7 @@ public:
 		//********************** BEGIN SET OF POINTS *********************************
 	//	ConfigureSetOfPoints(row, Points);
 		//********************** END SET OF POINTS *********************************
+		cout << row.size() << endl;
 		std::copy(std::begin(row), std::end(row), out_iter2);
 		out_iter2 = "\n";
 		row.clear();
@@ -69,12 +79,8 @@ public:
 		std::string Line{ "" };
 		//****************************************************************************************
 		// Writing The file
-		char Feature{ 0 };
-		configuration Configuration{ configuration::MIMO };
-		std::string Parent_Directory{ "" }, WaveFormDescription{ "" };
-		float CarrierFrequency{ 0.0 }, BandWidth{ 0.0 };
-		float Rotation_x{ 0.0 }, Rotation_y{ 0.0 }, Rotation_z{ 0.0 }, Position_x{ 0.0 }, Position_y{ 0.0 }, Position_z{ 0.0 };// To be changed to suit each element
-		size_t Waveform_Index{0};// To be changed to suit each element
+		char Feature{ 0 }; // This to be changed
+		std::string Parent_Directory{ "" };
 		//****************************************************************************************
 		row.push_back("Format type:keyword version: 1.1.0\n");
 		row.push_back("begin_<project> Untitled Project\n");
@@ -240,7 +246,7 @@ public:
 		row.push_back("FirstAvailableCommSystemNumber 0\n");
 		//******* Configuration of the antenna of an Wireless Point********************
 		for(auto& ant_array:this->CommSystem.AntennaArrays)
-			ConfigureAntennaArray(row, *ant_array, Waveform_Index);
+			ConfigureAntennaArray(row, *ant_array);
 
 	//	ConfigureAntennaArray(row, this->Antenna_Array_BS, Waveform_Index);
 		//SOLVE// row.push_back("position -//d -//1.7f -0\r\n', sin(Rotation_Angle) * Antenna_Element_spacing * 3 / 2, cos(Rotation_Angle) * Antenna_Element_spacing * 3 / 2);//, Antenna_Element_spacing / 2);
@@ -373,13 +379,13 @@ public:
 		row.push_back("end_<MimoElement>\n");
 		//**********************************************************************
 	}
-	void ConfigureAntennaType(vector<std::string>& row, ANTENNA_TYPE Antenna, size_t Waveform_Index=0) // To Be continued with antenna types
+	void ConfigureAntennaType(vector<std::string>& row, ANTENNA_TYPE Antenna) // To Be continued with antenna types
 	{
 		std::string index, waveform_index;
 		std::stringstream converter;
 
 		converter << Antenna.Index; converter >> index; converter.clear();
-		converter << Waveform_Index; converter >> waveform_index; converter.clear();
+		converter << Antenna.Carrier_Index; converter >> waveform_index; converter.clear();
 
 		//**********************************************************************
 		row.push_back("begin_<antenna> "+Antenna.Name+"\n");//Isotropic
@@ -398,13 +404,13 @@ public:
 		row.push_back("end_<antenna>\n");
 		//**********************************************************************
 	}
-	void ConfigureAntennaArray(vector<std::string>& row, ANTENNA_ARRAY Antenna_Array,size_t Waveform_Index = 0)
+	void ConfigureAntennaArray(vector<std::string>& row, ANTENNA_ARRAY& Antenna_Array)
 	{
 		std::string index, waveform_index, rotation_y, rotation_z, position_x, position_y, position_z;
 		std::stringstream converter;
 
 		converter << Antenna_Array.Index; converter >> index; converter.clear();
-		converter << Waveform_Index; converter >> waveform_index; converter.clear();
+		converter << Antenna_Array.Carrier_Index; converter >> waveform_index; converter.clear();
 
 		//******* Configuration of the antenna of an Wireless Point********************
 		row.push_back("begin_<antenna> "+Antenna_Array.Name+"\n");//MIMO_Terminal
@@ -423,7 +429,7 @@ public:
 					if (p_element->ElementType->Index != i)
 					{
 						i = p_element->ElementType->Index;
-						ConfigureAntennaType(row, *p_element->ElementType, Waveform_Index);
+						ConfigureAntennaType(row, *p_element->ElementType);
 					}
 		}
 		//************** END ANTENNA TYPE(s) ******************
@@ -438,11 +444,10 @@ public:
 		//******* END Configuration of the antenna of an Wireless Point****************
 
 	}
-	void ConfigureTransmitter(vector<std::string>& row, TRANSMITTER Tx)
+	void ConfigureTransmitter(vector<std::string>& row, TRANSMITTER& Tx)
 	{
 		std::string index, waveform_index, power_dbm;
 		std::stringstream converter;
-
 		converter << Tx.Antenna_Array->Index; converter >> index; converter.clear();
 		converter << Tx.Carrier->Index; converter >> waveform_index; converter.clear();
 		converter << Tools::Round(Tx.Power_dBm,3); converter >> power_dbm; converter.clear();
@@ -460,7 +465,7 @@ public:
 		row.push_back("end_<transmitter>\n");
 		/***************************************************/
 	}
-	void ConfigureReceiver(vector<std::string>& row, RECEIVER Rx)
+	void ConfigureReceiver(vector<std::string>& row, RECEIVER& Rx)
 	{
 		std::string index, waveform_index, noise_figure;
 		std::stringstream converter;
@@ -482,7 +487,7 @@ public:
 		row.push_back("end_<receiver>\n");
 		/***************END RECEIVER   *********************/
 	}
-	void ConfigureSetOfPoints(vector<std::string>& row, POINTS Points)
+	void ConfigureSetOfPoints(vector<std::string>& row, POINTS& Points)
 	{
 		std::string index, number_of_points, x,y,z, tx_exist, rx_exist;
 		std::stringstream converter;
@@ -539,7 +544,7 @@ public:
 		row.push_back("is_transmitter "+ tx_exist +"\n");// Transmitter and receiver properities // no
 		row.push_back("is_receiver "+ rx_exist +"\n"); // yes
 		/***************TRABSMITTER *************************/
-		ConfigureTransmitter(row, *(Points.Tx));
+		ConfigureTransmitter(row, *(Points.TX));
 		/*************** END TRABSMITTER ********************/
 		/*************** RECEIVER   *************************/
 		if(Points.Receiver_exist)ConfigureReceiver(row, *(Points.RX));
