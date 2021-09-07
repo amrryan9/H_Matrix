@@ -1,31 +1,8 @@
 #pragma once
-#include "SubSet.h"
+#include "Set_Line.h"
 
 #define element unsigned int
 
-struct Terminal
-{
-	float Distance;						// Distance from BS
-	float Height;						// Height from BS
-	float Phi;							// Azimuth from BS
-	float Theta;						// Elevation from BS
-	float R;							// Radial Distance from BS
-	Terminal(float d, float h, float phi, float theta, float r)
-	{
-		Distance = d;					// Distance from BS
-		Height = h;						// Height from BS
-		Phi = phi;						// Azimuth from BS
-		Theta = theta;					// Elevation from BS
-		R = r;
-	}
-	void Show()
-	{
-		cout << "******************************************************" << endl;
-		cout << setw(12) << "Distance(m)"<<setw(12)<<"Height(m)"<< setw(12) <<"Phi(rad)" << setw(12) << "Theta(rad)" << setw(12) << "R(m)" << endl;
-		cout << "______________________________________________________" << endl;
-		cout << setw(12) << Distance << setw(12) << Height << setw(12) << Phi << setw(12) << Theta << setw(12) << R << endl;
-	}
-};
 
 struct T_R_Set
 {
@@ -88,21 +65,6 @@ public:
 		this->S.push_back(*l);
 		return l;
 	}
-	/*
-	void AddItemPower(unsigned t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned r, unsigned c, double total_power, double power_phase)
-	{
-		std::string key;
-		std::stringstream converter;
-		converter << t_set << r_set << t_point << r_point; converter >> key;
-		for (auto& l : this->S)
-		{
-			if (l.Key == key)
-			{
-				l.Power.AddItem(r, c, total_power, power_phase);
-			}
-		}
-	}
-	*/
 	bool UpdateItem(std::vector<Ray> pathes_angles, unsigned t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned r, unsigned c)
 	{
 		//Update rays with angles 

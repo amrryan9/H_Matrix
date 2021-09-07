@@ -17,7 +17,7 @@
 #include "Ray.h"
 #include "Set.h"
 #include "Tools.h"
-
+#include "Environment.h"
 
 using namespace std;
 
@@ -28,6 +28,7 @@ class File_Processing
 {
 public:
 	File_Processing() = default;
+	
 	size_t Permutate(size_t i, size_t s)
 	{
 		i++;
@@ -62,40 +63,7 @@ public:
 		}
 		return true;
 	}
-	std::vector<Terminal> GetPositionDataSet(std::string file_in_teminals_positions)
-	{
-		std::stringstream converter;
-		std::vector<Terminal> Terminal_data_set;
-		std::ifstream in_Terminals_positions{ file_in_teminals_positions };
-		if (!in_Terminals_positions)
-		{
-			std::cerr << " Terminals_Positions file is not open." << std::endl;
-			exit(1);
-		}
-		std::vector<string> Terminals_positions_file{ std::istream_iterator<string>(in_Terminals_positions),std::istream_iterator<string>() };
-		size_t i_Terminals_positions = 0;
-		float Distance;
-		float Height;
-		float Phi;
-		float Theta;
-		float R;
-		for (auto xx : Terminals_positions_file)
-		{
-			if (i_Terminals_positions % 5 == 0) { converter << static_cast<std::string>(xx); converter >> Distance;	converter.clear(); }
-			else if (i_Terminals_positions % 5 == 1) { converter << static_cast<std::string>(xx); converter >> Height;	converter.clear(); }
-			else if (i_Terminals_positions % 5 == 2) { converter << static_cast<std::string>(xx); converter >> Phi;		converter.clear(); }
-			else if (i_Terminals_positions % 5 == 3) { converter << static_cast<std::string>(xx); converter >> Theta;		converter.clear(); }
-			else if (i_Terminals_positions % 5 == 4) { converter << static_cast<std::string>(xx); converter >> R;			converter.clear(); }
-			i_Terminals_positions++;
-
-			// Adding to the terminals data set //////////////////////////////////
-			if (i_Terminals_positions > 0 && i_Terminals_positions % 5 == 0)Terminal_data_set.push_back(Terminal(Distance, Height, Phi, Theta, R));
-			//////////////////////////////////////////////////////////////////////	
-		}
-		in_Terminals_positions.close();
-		cout << " Total Number of Lines :" << i_Terminals_positions / 5 << endl;
-		return Terminal_data_set;
-	}
+	
 	void CreateResultsFolder(std::string file_in_teminals_positions, std::string file_in_transmitter_power)
 	{
 		std::array< EXPOSURE, 3>Expo = { LOS,NLOS,ALL };
@@ -111,7 +79,7 @@ public:
 			//**********WORKS ONLY FOR 1 TRANSMITTER AND BUNCH OF RECEIVERS***************************
 		}
 	}
-	inline Set read_directory(const std::string& cir_path)
+	inline Set read_directory(const std::string& cir_path,Environment* environ=0)
 	{
 		std::stringstream converter;
 		//*************************************************************************
@@ -216,14 +184,22 @@ public:
 		ReadDirection(cir_path,transmitter_power_watt, MIMO_H_MATRIX, FILES::CIR);
 		if(CheckIfFolderExist(dod_path))
 			ReadDirection(dod_path, transmitter_power_watt, MIMO_H_MATRIX, FILES::DOD);
+		MIMO_H_MATRIX.SetExposure();
 		//************************* END APPLY *****************************************
 		//************** CREATING TERMINALS DATA SET **********************************
 		//************** READING TERMINALS _POSITIONS FILE*****************************
-		string file_in_teminals_positions{ Position_Power_directory + "/Terminals_positions.txt" };
-		std::vector<Terminal> Terminal_data_set = GetPositionDataSet(file_in_teminals_positions);
-		//*****************************************************************************
-		CreateResultsFolder(file_in_teminals_positions, file_in_transmitter_power);
-		//*****************************************************************************
+		std::vector<Terminal> Terminal_data_set;
+		if(environ!=0)Terminal_data_set = environ->GetPositionDataSet(); // This has to be changed when the environment class is finished
+		else
+		{
+			string file_in_teminals_positions{ Position_Power_directory + "/Terminals_positions.txt" };
+			Terminal_data_set = Environment::GetPositionDataSetFromFile(file_in_teminals_positions);
+			//*****************************************************************************
+			CreateResultsFolder(file_in_teminals_positions, file_in_transmitter_power);
+			//*****************************************************************************
+		//	return MIMO_H_MATRIX;
+		}
+		
 		size_t p = 0;
 		size_t i_terminal = 0;
 		size_t SetSize = MIMO_H_MATRIX.S.size();
@@ -256,7 +232,7 @@ public:
 	//		t.Show();
 		}	
 		//****************************************************************************************
-		MIMO_H_MATRIX.SetExposure();
+		
 		
 	//	cout << " Total Number of Points" << MIMO_H_MATRIX.S.size() << " Number of " << " LOS" << " Points is " << MIMO_H_MATRIX.GetEXPO(EXPOSURE::LOS).S.size() << endl;
 	//	MIMO_H_MATRIX.PermutateBack();

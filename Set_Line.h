@@ -9,6 +9,7 @@
 
 enum class PROPERITIES { EMPTY_PROP, TX_SET, RX_SET, TX_POINT, RX_POINT, DIRECT_DISTANCE, RADIAL_DISTANCE, HEIGHT, THETA, PHI, POWER_dBm };
 using namespace std;
+
 struct POSITION { 
 	double Distance;
 	double Height;
