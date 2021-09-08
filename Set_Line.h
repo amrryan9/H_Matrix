@@ -11,54 +11,33 @@ enum class PROPERITIES { EMPTY_PROP, TX_SET, RX_SET, TX_POINT, RX_POINT, DIRECT_
 using namespace std;
 
 struct POSITION { 
-	double Distance;
-	double Height;
-	double Theta;
-	double Phi;
-	double R;
-	float abs_Height;//
-	float abs_Theta;//
+	float Distance;
+	float Height;
+	float Theta;
+	float Phi;
+	float R;
+	float X;
+	float Y;
+	float Z;
+
+	POSITION()
+	{
+		Distance = 0.0;
+		Height = 0.0;
+		Theta = 0.0;
+		Phi = 0.0;
+		R = 0.0;
+		X = 0.0;
+		Y = 0.0;
+		Z = 0.0;
+
+	}
 	void Show()
 	{
 		cout<< " POSITION TX-RX   :\n\t DISTANCE      : "<<setw(10)<< Distance <<" METERS\n\t HEIGHT        : " << setw(10) << Height   <<" METERS\n\t ANGLE_ELEV    : " << setw(10) << Theta    <<"   RADS\n\t ANGLE_AZIMUTH : " << setw(10)<< Phi      <<"   RADS\n\t R" << setw(10) << R << "   METERS" << endl;
 	}
-	float X()
-	{
-		return (static_cast<float>(R * std::cos(Phi))+500.0);// to be changed to a generic area 
-	}
-	float Y()
-	{
-		return (static_cast<float>(R * std::sin(Phi))+500.0);// to be changed to a generic area 
-	}
-	float Z()
-	{
-		abs_Height = Tools::Transmitter_height - (std::abs(Height));
-		return static_cast<float>(abs_Height);
-	}
-	float absTheta()
-	{
-		abs_Height = Tools::Transmitter_height - (std::abs(Height));
-		abs_Theta = std::atan(R / abs_Height);
-		return static_cast<float>(abs_Theta);
-	}
-	float absPhi()
-	{
-		return static_cast<float>(Phi);
-	}
-	float absDistance()
-	{
-		abs_Height = Tools::Transmitter_height - (std::abs(Height));
-		return static_cast<float>(sqrt(pow(abs_Height,2.0)+pow(R,2.0)));
-	}
-	float DirectDistance()
-	{
-		return static_cast<float>(Distance);
-	}
-	float ElevationAngle()
-	{
-		return static_cast<float>(Theta);
-	}
 };
+
 struct PATHS
 {
 	PATHS()
@@ -148,6 +127,8 @@ public:
 		Receiver_Set		= r_set;
 		Transmitter_Point	= t_point;
 		Receiver_Point		= r_point;
+		DirectDistance = 0;
+		ElevationAngle = 0;
 		std::stringstream converter;
 		converter << t_set<< r_set<< t_point<< r_point; converter >> this->Key;
 		Expose = NON;
@@ -158,6 +139,8 @@ public:
 		Receiver_Set = r_set;
 		Transmitter_Point = t_point;
 		Receiver_Point = r_point;
+		DirectDistance = 0;
+		ElevationAngle = 0;
 		std::stringstream converter;
 		converter << t_set << r_set << t_point << r_point; converter >> this->Key; converter.clear();
 		std::string key1, key;
@@ -233,12 +216,14 @@ public:
 		std::cout << " POWER FROM TX ELE: " << endl; this->Power.Shrink_Horizontal().Show(POLAR);
 		std::cout << " POWER AVRAG AT RX: " << this->Power.Rceiver_Average_Power() << " WATTS  " << endl;
 		std::cout << " EXPOSURE         : " << PrintExposure(Expose) << endl;
-		this->Position.Show();
+		std::cout << " DIRECT DISTANCE  : " << this->DirectDistance << endl;
+		std::cout << " ELEVATION ANGLE  : " << this->ElevationAngle<< endl;
+		this->RxPosition.Show();
 		this->M.Show(RECT);
 	}
 	void ShowBrief()
 	{
-		cout << " AT DISTANCE " << this->Position.Distance << " . AT PHI :" << this->Position.Phi <<endl;
+		cout << " AT DISTANCE " << this->RxPosition.Distance << " . AT PHI :" << this->RxPosition.Phi <<endl;
 	}
 	void ShowPower(size_t tx_element,size_t rx_element)
 	{
@@ -386,27 +371,27 @@ public:
 				return false;
 			break;
 		case PROPERITIES::DIRECT_DISTANCE:
-			if (static_cast<double>(max) >= this->Position.Distance && static_cast<double>(min) <= this->Position.Distance)return true;
+			if (static_cast<double>(max) >= this->RxPosition.Distance && static_cast<double>(min) <= this->RxPosition.Distance)return true;
 			else
 				return false;
 			break;
 		case PROPERITIES::RADIAL_DISTANCE:
-			if (static_cast<double>(max) >= this->Position.R && static_cast<double>(min) <= this->Position.R)return true;
+			if (static_cast<double>(max) >= this->RxPosition.R && static_cast<double>(min) <= this->RxPosition.R)return true;
 			else
 				return false;
 			break;
 		case PROPERITIES::HEIGHT:
-			if (static_cast<double>(max) >= this->Position.Height && static_cast<double>(min) <= this->Position.Height)return true;
+			if (static_cast<double>(max) >= this->RxPosition.Height && static_cast<double>(min) <= this->RxPosition.Height)return true;
 			else
 				return false;
 			break;
 		case PROPERITIES::THETA:
-			if (static_cast<double>(max) >= this->Position.Theta && static_cast<double>(min) <= this->Position.Theta)return true;
+			if (static_cast<double>(max) >= this->RxPosition.Theta && static_cast<double>(min) <= this->RxPosition.Theta)return true;
 			else
 				return false;
 			break;
 		case PROPERITIES::PHI:
-			if (static_cast<double>(max) >= this->Position.Phi && static_cast<double>(min) <= this->Position.Phi)return true;
+			if (static_cast<double>(max) >= this->RxPosition.Phi && static_cast<double>(min) <= this->RxPosition.Phi)return true;
 			else
 				return false;
 			break;
@@ -424,9 +409,12 @@ public:
 	unsigned  Receiver_Set;
 	unsigned  Transmitter_Point;
 	unsigned  Receiver_Point;
+	float DirectDistance; // Distance between the transmitter point and the receiver point
+	float ElevationAngle; // angel between the horizontal plane and the line between the transmitter and the receiver points
 	Complex_matrix M;
 	Double_matrix Q;
-	POSITION Position;
+	POSITION RxPosition;
+	POSITION TxPosition;
 	WirelessPower Power;
 	std::vector<PATHS> Pathes;
 	EXPOSURE Expose;

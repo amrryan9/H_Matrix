@@ -18,6 +18,7 @@
 #include "Set.h"
 #include "Tools.h"
 #include "Environment.h"
+#include "CommunicationSystem.h"
 
 using namespace std;
 
@@ -189,17 +190,30 @@ public:
 		//************** CREATING TERMINALS DATA SET **********************************
 		//************** READING TERMINALS _POSITIONS FILE*****************************
 		std::vector<Terminal> Terminal_data_set;
-		if(environ!=0)Terminal_data_set = environ->GetPositionDataSet(); // This has to be changed when the environment class is finished
-		else
-		{
+//		if(environ!=0)Terminal_data_set = environ->GetPositionDataSet(); // This has to be changed when the environment class is finished
+//		else
+	//	{
 			string file_in_teminals_positions{ Position_Power_directory + "/Terminals_positions.txt" };
 			Terminal_data_set = Environment::GetPositionDataSetFromFile(file_in_teminals_positions);
 			//*****************************************************************************
 			CreateResultsFolder(file_in_teminals_positions, file_in_transmitter_power);
 			//*****************************************************************************
 		//	return MIMO_H_MATRIX;
-		}
+	//	}
 		
+		/***********Update the Set with points positions************************************/
+		SetPointsPositions(MIMO_H_MATRIX, Terminal_data_set);
+		/***********************************************/
+		
+		
+	//	cout << " Total Number of Points" << MIMO_H_MATRIX.S.size() << " Number of " << " LOS" << " Points is " << MIMO_H_MATRIX.GetEXPO(EXPOSURE::LOS).S.size() << endl;
+	//	MIMO_H_MATRIX.PermutateBack();
+	//	MIMO_H_MATRIX.Show();
+		return MIMO_H_MATRIX;// .GetEXPO(exposure);
+	}
+	//////////////////////////////////////////////////////////
+	void SetPointsPositions(Set& MIMO_H_MATRIX, std::vector<Terminal>& Terminal_data_set)
+	{
 		size_t p = 0;
 		size_t i_terminal = 0;
 		size_t SetSize = MIMO_H_MATRIX.S.size();
@@ -210,14 +224,18 @@ public:
 					{
 						for (auto& s : MIMO_H_MATRIX.S)
 						{
-						//	p=Permutate(i_terminal, SetSize);
+							//	p=Permutate(i_terminal, SetSize);
 							p = i_terminal;
-							// Adding Position to Set_Line ///////////////////////////////////////
-							s.Position.Distance = Terminal_data_set.at(p).Distance;
-							s.Position.Height = Terminal_data_set.at(p).Height;
-							s.Position.Theta = Terminal_data_set.at(p).Theta;
-							s.Position.Phi = Terminal_data_set.at(p).Phi;
-							s.Position.R = Terminal_data_set.at(p).R;
+							// Adding RxPosition to Set_Line ///////////////////////////////////////
+							s.RxPosition.Distance = Terminal_data_set.at(p).Distance;
+							s.RxPosition.Height = Terminal_data_set.at(p).Height;
+							s.RxPosition.Theta = Terminal_data_set.at(p).Theta;
+							s.RxPosition.Phi = Terminal_data_set.at(p).Phi;
+							s.RxPosition.R = Terminal_data_set.at(p).R;
+							s.TxPosition.Z = 500; // For testing
+							s.DirectDistance = sqrt(pow(s.TxPosition.X - s.RxPosition.X, 2) + pow(s.TxPosition.Y - s.RxPosition.Y, 2) + pow(s.TxPosition.Z - s.RxPosition.Z, 2)); cout << " Direct Distance :" << s.DirectDistance << endl;
+							s.ElevationAngle = asin((s.TxPosition.Z - s.RxPosition.Z) / s.DirectDistance);// The Elevation angle magnitude is < 90 Degres, when it is positive the transmitter is higher , when negative , the transmitter is lower than the receiver
+							if (s.ElevationAngle > (22.0 / 7.0))s.ElevationAngle = s.ElevationAngle - (44.0 / 7.0);
 							//////////////////////////////////////////////////////////////////////
 							i_terminal++;
 						}
@@ -227,19 +245,65 @@ public:
 				else cout << " Receivers are :" << MIMO_H_MATRIX.Receivers.size() << endl;
 			else cout << " Transmitters points :" << MIMO_H_MATRIX.Transmitters.at(0).T_R_Points.size() << endl;
 		else cout << " Transmetters are :" << MIMO_H_MATRIX.Transmitters.size() << endl;
-	//	for (auto t : Terminal_data_set)
+		//	for (auto t : Terminal_data_set)
 		{
-	//		t.Show();
-		}	
+			//		t.Show();
+		}
 		//****************************************************************************************
-		
-		
-	//	cout << " Total Number of Points" << MIMO_H_MATRIX.S.size() << " Number of " << " LOS" << " Points is " << MIMO_H_MATRIX.GetEXPO(EXPOSURE::LOS).S.size() << endl;
-	//	MIMO_H_MATRIX.PermutateBack();
-	//	MIMO_H_MATRIX.Show();
-		return MIMO_H_MATRIX;// .GetEXPO(exposure);
+
 	}
-	//////////////////////////////////////////////////////////
+	void SetPointsPositions(Set& MIMO_H_MATRIX, CommunicationSystem& Comm)
+	{
+
+		size_t p = 0;
+		size_t i_terminal = 0;
+		size_t SetSize = MIMO_H_MATRIX.S.size();
+		for (auto& s : MIMO_H_MATRIX.S)
+		{
+			
+			//	p=Permutate(i_terminal, SetSize);
+			//p = i_terminal;
+			auto location_pointer_tx = Comm.GetPointLocation(s.Transmitter_Set, s.Transmitter_Point);
+			auto location_pointer_rx = Comm.GetPointLocation(s.Receiver_Set, s.Receiver_Point);
+			if (location_pointer_tx != nullptr  && location_pointer_rx != nullptr)
+			{
+				// Adding TxPosition to Set_Line ///////////////////////////////////////
+				s.TxPosition.Distance = sqrt(pow(location_pointer_tx->X, 2.0) + pow(location_pointer_tx->Y, 2.0) + pow(location_pointer_tx->Z, 2.0));
+				s.TxPosition.Height = location_pointer_tx->Z;
+				s.TxPosition.R = (sqrt(pow(location_pointer_tx->X, 2.0) + pow(location_pointer_tx->Y, 2.0)));// Radial Distance
+				s.TxPosition.Theta = asin(s.TxPosition.R / s.TxPosition.Distance);// Zenth Angle in Rads
+				s.TxPosition.Phi = asin(location_pointer_tx->Y/ s.TxPosition.Distance);// Azimuth angle in Rads.
+				s.TxPosition.X = location_pointer_tx->X;
+				s.TxPosition.Y = location_pointer_tx->Y;
+				s.TxPosition.Z = location_pointer_tx->Z;
+				/////////////////////////////////////////////////////////////////////
+			
+				// Adding RxPosition to Set_Line ///////////////////////////////////////
+				s.RxPosition.Distance = sqrt(pow(location_pointer_rx->X, 2.0) + pow(location_pointer_rx->Y, 2.0) + pow(location_pointer_rx->Z, 2.0));
+				s.RxPosition.Height = location_pointer_rx->Z;
+				s.RxPosition.R = (sqrt(pow(location_pointer_rx->X, 2.0) + pow(location_pointer_rx->Y, 2.0)));// Radial Distance
+				s.RxPosition.Theta = asin(s.RxPosition.R / s.RxPosition.Distance);// Zenth Angle in Rads
+				s.RxPosition.Phi = asin(location_pointer_rx->Y / s.RxPosition.Distance);// Azimuth angle in Rads.
+				s.RxPosition.X = location_pointer_rx->X;
+				s.RxPosition.Y = location_pointer_rx->Y;
+				s.RxPosition.Z = location_pointer_rx->Z;
+				/////////////////////////////////////////////////////////////////////
+				s.DirectDistance = sqrt(pow(s.TxPosition.X-s.RxPosition.X, 2) + pow(s.TxPosition.Y - s.RxPosition.Y, 2) + pow(s.TxPosition.Z - s.RxPosition.Z, 2)); cout << " Direct Distance :" << s.DirectDistance << endl;
+				s.ElevationAngle = asin((s.TxPosition.Z - s.RxPosition.Z) / s.DirectDistance);// The Elevation angle magnitude is < 90 Degres, when it is positive the transmitter is higher , when negative , the transmitter is lower than the receiver
+				if (s.ElevationAngle > (22.0 / 7.0))s.ElevationAngle = s.ElevationAngle - (44.0 / 7.0);
+
+			}
+		//	i_terminal++;
+		}
+		cout << " OK !!!" << endl;
+					
+		//	for (auto t : Terminal_data_set)
+		{
+			//		t.Show();
+		}
+		//****************************************************************************************
+
+	}
 	EXPOSURE CheckPathes(std::vector<Ray> pathes, bool DOD_EXIST)
 	{
 		version TEST;

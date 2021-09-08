@@ -41,13 +41,15 @@ int main()
 	/********************************/
 	W->CommSystem = *System;
 	W->City_File = "City.city";
-	W->TxRx_File = "ProjectName.txrx";
-	W->WriteFiles_1("D:/file_1.txt");
-	W->WriteFiles_2("D:/file_2.txt");
+	W->Project_Folder = "D:/Test_H_Matrix";
+	W->Project_Name = "Test_Project_1";
+	W->Study_Area_Folder = "Test_Project_1_Study_Area_Folder_Name";
+	W->WriteFiles_1();
+	W->WriteFiles_2();
+	
 	E->SetTerminalsPositionsFileDirectory("D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/" + Tools::ConvertToString(847));
 
 	
-//	S = f->read_directory("D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/" + Tools::ConvertToString(847) + "/MIMO_BS_UAV_TERMINALS/cir");
-//	S.GetEXPO(EXPOSURE::NLOS).Filter(PROPERITIES::POWER_dBm, 0, -32, PROPERITIES::DIRECT_DISTANCE, 112, 12.9, PROPERITIES::RADIAL_DISTANCE, 25)->ShowRXPoints(POLAR);//WriteRXPoints("./trail.csv", POLAR);// 
-
+	S = f->read_directory("D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/" + Tools::ConvertToString(847) + "/MIMO_BS_UAV_TERMINALS/cir");
+	S.GetEXPO(EXPOSURE::NLOS).Filter(PROPERITIES::POWER_dBm, 0, -32, PROPERITIES::DIRECT_DISTANCE, 112, 12.9, PROPERITIES::RADIAL_DISTANCE, 25)->WriteRXPoints("D:/trail.csv", POLAR);// ShowRXPoints(POLAR);//
 }

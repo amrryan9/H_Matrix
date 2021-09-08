@@ -333,7 +333,7 @@ public:
 		for (size_t i = 1; i <= S_size; i++)
 		{
 			auto L = S.at(Tools::RePermute(i, S_size) - 1);
-			cout << setw(10) << i << " :," << L.Position.Distance << " :," << setw(10) << L.Position.Height << " :," << setw(10) << L.Position.Phi << " :," << setw(10) << L.Position.Theta << " :," << setw(10) << L.Position.R; L.ShowPower(txEle, rxEle);// << endl;
+			cout << setw(10) << i << " :," << L.RxPosition.Distance << " :," << setw(10) << L.RxPosition.Height << " :," << setw(10) << L.RxPosition.Phi << " :," << setw(10) << L.RxPosition.Theta << " :," << setw(10) << L.RxPosition.R; L.ShowPower(txEle, rxEle);// << endl;
 		}
 		cout << " Number of Terminals :" << S_size << endl;
 	}
@@ -375,31 +375,7 @@ public:
 	}
 	void ShowPower_file(configuration conf)  // shows power from the txEle in each transmitter point to all txEle for all receiver points
 	{
-		size_t i{ 1 };
-		switch (conf)
-		{
-		case configuration::MIMO:
-			cout << " " << i << setw(20) << "# X(m)" << setw(20) << "Y(m)" << setw(20) << "Z(m)" << setw(20) << "Distance(m)" << setw(40) << "Power(dBm)" << setw(40) << "Phase(deg)" << endl;
-			cout << "________________________________________________________________________________________________________________________________________________" << endl;
-			for (auto& s : this->S)
-			{
-				cout << " " << i << setw(20) << s.Position.X() << setw(20) << s.Position.Y() << setw(20) << s.Position.Z() << setw(40) << s.Position.DirectDistance() << setw(40); s.ShowPower(0, 0);
-				i++;
-			}
-			cout << "________________________________________________________________________________________________________________________________________________" << endl;
-			break;
-		case configuration::SISO:
-			cout << " " << i << setw(20) << "# X(m)" << setw(20) << "Y(m)" << setw(20) << "Z(m)" << setw(20) << "Distance(m)" << setw(20) << "Power(dBm)" << setw(20) << "Phase(deg)" << endl;
-			cout << "________________________________________________________________________________________________________________________________________________" << endl;
-			for (auto& s : this->S)
-			{
-				cout << " " << i << setw(20) << s.Position.X() << setw(20) << s.Position.Y() << setw(20) << s.Position.Z() << setw(20) << s.Position.DirectDistance() << setw(20) << s.Power.GetPower_dBm() << setw(20) << s.Power.GetPhase_Deg() << endl;
-				i++;
-			}
-			cout << "________________________________________________________________________________________________________________________________________________" << endl;
-			break;
-		}
-
+		
 	}
 	void ShowH()
 	{
@@ -455,11 +431,12 @@ public:
 
 	void ShowRXPoints(ComplexForm form = RECT)
 	{
+		cout << "kkkkkkkkkkk" << endl;
 		/// Show The world
 		size_t rx_elements, tx_elements;
 		size_t index{ 1 };
-		cout << setw(10) << "item #  " << setw(10) << "RX Point #" << setw(10) << "RX Set#"<<setw(32)<<"Position            " << setw(26) << "Power(dBm)     " << setw(16) << "Exposure" << setw(15) << "TX set" << setw(15) << "TX Point" << setw(100) << "H_Matrix                              " << endl;
-		cout << setw(27) << " " << setw(8) << "D  " << setw(8) << "R " << setw(8) << "Phi " << setw(8) << "Theta";
+		cout << setw(10) << "item #  " << setw(10) << "RX Point #" << setw(10) << "RX Set#" << setw(32) << "Position RX         " <<setw(32)<<"Position TX         " << setw(26) << "Power(dBm)     " << setw(16) << "Exposure" << setw(15) << "TX set" << setw(15) << "TX Point" << setw(100) << "H_Matrix                              " << endl;
+		cout << setw(27) << " " << setw(8) << "D  " << setw(8) << "R " << setw(8) << "Phi " << setw(8) << "Theta"<< setw(8) << "D  " << setw(8) << "R " << setw(8) << "Phi " << setw(8) << "Theta";
 		if (this->S.size() > 0)
 		{
 			rx_elements=this->S.at(0).M.Columns_Count;
@@ -473,7 +450,7 @@ public:
 			cout << endl;
 			for (auto l : this->S)
 			{
-				cout << setw(5) << index << setw(10) << l.Receiver_Point << setw(12) << l.Receiver_Set << setw(8) << l.Position.DirectDistance() << setw(8) << l.Position.R << setw(8) << l.Position.Phi << setw(8) << l.Position.Theta;
+				cout << setw(5) << index << setw(10) << l.Receiver_Point << setw(12) << l.Receiver_Set << setw(8) << l.RxPosition.Distance << setw(8) << l.RxPosition.R << setw(8) << l.RxPosition.Phi << setw(8) << l.RxPosition.Theta << setw(6) << l.TxPosition.Distance << setw(9) << l.TxPosition.R << setw(8) << l.TxPosition.Phi << setw(8) << l.TxPosition.Theta;
 				for (size_t i = 0; i < rx_elements; i++)
 					cout << setw(static_cast<size_t>(26.0 / static_cast<float>(rx_elements))+2) << Tools::Round2(l.Power.Shrink().GetItem(0, i), 3);
 				switch (l.Expose)
@@ -530,17 +507,17 @@ public:
 		{
 			rx_elements = this->S.at(0).M.Columns_Count;
 			tx_elements = this->S.at(0).M.Rows_Count;
-			Line = "item #,RX Point #,RX Set#,Position,,,,Power(dBm),";
+			Line = "item #,RX Point #,RX Set#,RX Position,,,,TX Position,,,,Direct Distance,Elevation Angle,Power(dBm),";
 			for (size_t i = 1; i < rx_elements; i++)Line = Line + ",";
 			Line = Line + "Exposure,TX set,TX Point,H_Matrix" + "\n";
 			row.push_back(Line); Line.clear();
-			Line = ",,,D,R,Phi,Theta";
+			Line = ",,,D,R,Phi,Theta,D,R,Phi,Theta,,";
 			for (size_t i = 0; i < rx_elements; i++)
 			{
 				converter << (i + 1); converter >> i_1; converter.clear();
 				Line = Line + ",Rx Ele(" + i_1 + ")";
 			}
-			Line = Line + ",,,";
+			Line = Line +",,,";
 			i_1.clear();
 			for (size_t i = 0; i < tx_elements; i++)
 				for (size_t j = 0; j < rx_elements; j++)
@@ -550,21 +527,27 @@ public:
 					Line = Line + ",h("+i_1+"-"+j_1+")" ;//\",\"
 				}	
 		row.push_back(Line + "\n"); Line.clear();
-		string index_,l_Receiver_Point, l_Receiver_Set, l_Position_DirectDistance, l_Position_R, l_Position_Phi, l_Position_Theta, l_Transmitter_Set, l_Transmitter_Point,power_;
+		string index_,l_Receiver_Point, l_Receiver_Set, l_rxPosition_Distance, l_rxPosition_R, l_rxPosition_Phi, l_rxPosition_Theta, l_txPosition_Distance, l_txPosition_R, l_txPosition_Phi, l_txPosition_Theta, l_Transmitter_Set, l_Transmitter_Point,l_Direct_Distance,l_Elevation_Angle,power_;
 		
 		for (auto l : this->S)
 		{
 			converter << index;							converter >> index_;					converter.clear();
 			converter << l.Receiver_Point;				converter >> l_Receiver_Point;			converter.clear();
 			converter << l.Receiver_Set;				converter >> l_Receiver_Set;			converter.clear();
-			converter << l.Position.DirectDistance();	converter >> l_Position_DirectDistance; converter.clear();
-			converter << l.Position.Phi;				converter >> l_Position_Phi;			converter.clear();
-			converter << l.Position.Theta;				converter >> l_Position_Theta;			converter.clear();
-			converter << l.Position.R;					converter >> l_Position_R;				converter.clear();
+			converter << l.RxPosition.Distance;			converter >> l_rxPosition_Distance;		converter.clear();
+			converter << l.RxPosition.Phi;				converter >> l_rxPosition_Phi;			converter.clear();
+			converter << l.RxPosition.Theta;			converter >> l_rxPosition_Theta;		converter.clear();
+			converter << l.RxPosition.R;				converter >> l_rxPosition_R;			converter.clear();
+			converter << l.TxPosition.Distance;			converter >> l_txPosition_Distance;		converter.clear();
+			converter << l.TxPosition.Phi;				converter >> l_txPosition_Phi;			converter.clear();
+			converter << l.TxPosition.Theta;			converter >> l_txPosition_Theta;		converter.clear();
+			converter << l.TxPosition.R;				converter >> l_txPosition_R;			converter.clear();
 			converter << l.Transmitter_Set;				converter >> l_Transmitter_Set;			converter.clear();
 			converter << l.Transmitter_Point;			converter >> l_Transmitter_Point;		converter.clear();
+			converter << l.DirectDistance;				converter >> l_Direct_Distance;			converter.clear();
+			converter << l.ElevationAngle;				converter >> l_Elevation_Angle;			converter.clear();
 
-			Line= index_+","+l_Receiver_Point +"," + l_Receiver_Set + "," + l_Position_DirectDistance + "," + l_Position_R +"," + l_Position_Phi +","+ l_Position_Theta;
+			Line= index_+","+l_Receiver_Point +"," + l_Receiver_Set + "," + l_rxPosition_Distance + "," + l_rxPosition_R +"," + l_rxPosition_Phi +","+ l_rxPosition_Theta+"," + l_txPosition_Distance + "," + l_txPosition_R + "," + l_txPosition_Phi + "," + l_txPosition_Theta+","+l_Direct_Distance+","+l_Elevation_Angle;
 			for (size_t i = 0; i < rx_elements; i++)
 			{
 				converter << Tools::Round2(l.Power.Shrink().GetItem(0, i), 3); converter >> power_; converter.clear();

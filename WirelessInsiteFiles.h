@@ -21,14 +21,11 @@ public:
 		}
 		return false;
 	}
-	void WriteFiles_1(std::string file_out)
+	void CreateCityFile() {} // can be done when test is available
+	void WriteFiles_1()
 	{
-
-		std::string parent_directory = file_out;
-		size_t position = file_out.find_last_of("/");
-		std::string file_name = parent_directory.substr(position);
-		parent_directory.erase(position, file_name.size());
-		file_name.erase(0, 1);
+		std::string file_out =this->Project_Folder+"/"+this->Project_Name+ "/" + this->Project_Name+".txrx";
+		std::string parent_directory = this->Project_Folder + "/" + this->Project_Name;// file_out;
 		if (!std::filesystem::exists(parent_directory))
 		{
 			if (std::filesystem::create_directory(parent_directory))cout << parent_directory << " Directory Created" << endl; else { cout << parent_directory << " Directory can't be created " << endl; exit(0); }
@@ -37,8 +34,6 @@ public:
 		std::ostream_iterator<string> out_iter2{ out, " " };
 		//****************************************************************************************
 		vector<std::string>row;
-	//	std::stringstream converter;
-	//	std::string Line{ "" };
 		//****************************************************************************************
 		// Writing The file
 		//********************** BEGIN SET OF POINTS *********************************
@@ -48,11 +43,6 @@ public:
 			else
 				cout << " ERROR : Points Set Null pointer AT :  " << endl;
 		}
-		
-	//	ConfigureSetOfPoints(row, Points);
-		//********************** END SET OF POINTS *********************************
-		//********************** BEGIN SET OF POINTS *********************************
-	//	ConfigureSetOfPoints(row, Points);
 		//********************** END SET OF POINTS *********************************
 		cout << row.size() << endl;
 		std::copy(std::begin(row), std::end(row), out_iter2);
@@ -60,30 +50,24 @@ public:
 		row.clear();
 
 	}
-	void WriteFiles_2(std::string file_out)
+	void WriteFiles_2()
 	{
-		std::string parent_directory = file_out;
-		size_t position = file_out.find_last_of("/");
-		std::string file_name = parent_directory.substr(position);
-		parent_directory.erase(position, file_name.size());
-		file_name.erase(0, 1);
+		std::string file_out = this->Project_Folder + "/" + this->Project_Name + "/" + this->Project_Name + ".setup";
+		std::string parent_directory = this->Project_Folder + "/" + this->Project_Name;// file_out;
 		if (!std::filesystem::exists(parent_directory))
 		{
 			if (std::filesystem::create_directory(parent_directory))cout << parent_directory << " Directory Created" << endl; else { cout << parent_directory << " Directory can't be created " << endl; exit(0); }
 		}
 		std::ofstream out{ file_out , std::ios_base::out | std::ios_base::trunc };//+ extension
 		std::ostream_iterator<string> out_iter2{ out, " " };
-
+		//****************************************************************************************
 		vector<std::string>row;
-		std::stringstream converter;
-		std::string Line{ "" };
+		size_t Feature{ 0 };
 		//****************************************************************************************
 		// Writing The file
-		char Feature{ 0 }; // This to be changed
-		std::string Parent_Directory{ "" };
 		//****************************************************************************************
 		row.push_back("Format type:keyword version: 1.1.0\n");
-		row.push_back("begin_<project> Untitled Project\n");
+		row.push_back("begin_<project> Untitled Project\n"); // Try to change this with the folder name when it is possible to test
 		row.push_back("project_id 5368\n");
 		row.push_back("begin_<globals> \n");
 		row.push_back("longitude 0\n");
@@ -95,12 +79,12 @@ public:
 		row.push_back("begin_<caches> \n");
 		row.push_back("begin_<cache> \n");
 		row.push_back("type X3DGeometry\n");
-		row.push_back("filename ./MIMO_UAV_10_LOS.X3DGeometry.cache\n");
+		row.push_back("filename ./"+this->Project_Name+".X3DGeometry.cache\n");
 		row.push_back("valid false\n");
 		row.push_back("end_<cache>\n");
 		row.push_back("end_<caches>\n");
 		// ----------------New Version-------------------- -
-		row.push_back("begin_<studyarea> MIMO_BS_UAV_TERMINALS\n");
+		row.push_back("begin_<studyarea> "+this->Study_Area_Folder+"\n");//MIMO_BS_UAV_TERMINALS
 		row.push_back("StudyAreaNumber 0\n");
 		row.push_back("active\n");
 		row.push_back("begin_<partitioning> \n");
@@ -221,7 +205,7 @@ public:
 			row.push_back("feature 0\n");
 			row.push_back("city\n");
 			row.push_back("active\n");
-			row.push_back("filename "+ Parent_Directory+ this->City_File +"\n");
+			row.push_back("filename "+ this->Project_Folder+this->Project_Name+ this->City_File +"\n");// for now setup the city file in the project folder althoug it is not necessary
 			row.push_back("end_<feature>\n");
 	//	}
 	/*	else if (Feature == 0)  I HOPE IT WORKS
@@ -240,7 +224,7 @@ public:
 			row.push_back("end_<feature>\n");
 		}*/
 		row.push_back("begin_<txrx_sets> \n");
-		row.push_back("filename "+this->TxRx_File+"\n");//./MIMO_UAV_10_LOS.txrx
+		row.push_back("filename "+this->Project_Name+".txrx\n");//./"+this->Project_Name+".txrx
 		row.push_back("FirstAvailableTxRxNumber 3\n");
 		row.push_back("end_<txrx_sets>\n");
 		row.push_back("FirstAvailableCommSystemNumber 0\n");
@@ -555,7 +539,10 @@ public:
 	}
 	public:
 		std::string City_File;
-		std::string TxRx_File;
+//		std::string TxRx_File;
+		std::string Project_Name;
+		std::string Project_Folder;
+		std::string Study_Area_Folder;
 		//ANTENNA_ARRAY Antenna_Array_Terminal;
 		//ANTENNA_ARRAY Antenna_Array_BS;
 		//CARRIER Carrier;

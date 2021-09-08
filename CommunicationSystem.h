@@ -390,6 +390,19 @@ public:
 		}
 		return false;
 	}
+	POINT_LOCATION* GetPointLocation(size_t set, size_t point) // The point is given as the topology , i-e starts from 1 NOT 0
+	{
+		for (auto& s: this->PointsSets)
+		{
+			if (s != nullptr)
+			{
+				if (s->Project_id == set)
+					if(s->Point_locations.size()> point)
+						return s->Point_locations.at(point);
+			}
+		}
+		return nullptr; // This may cause runtime errors
+	}
 	void Show()
 	{
 		for (auto& p : PointsSets)
