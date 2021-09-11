@@ -27,6 +27,15 @@ struct CARRIER
 		Description=description;
 		Index=index;
 	}
+	void Show()
+	{
+		cout << " *************** CARRIER *****************" << endl;
+		cout << "     BAND WIDTH  : " << Frequency << endl;
+		cout << "     FREQUENCY   : " << Band_Width << endl;
+		cout << "     DESCRIPTION : " << Description << endl;
+		cout << "     INDEX       : " << Index << endl;
+		cout << " *****************************************" << endl;
+	}
 };
 struct ANTENNA_TYPE
 {
@@ -48,6 +57,15 @@ struct ANTENNA_TYPE
 		Type = type;
 		Index = index;
 		Polarization = polarization;
+	}
+	void Show()
+	{
+		cout << " ************* ANTENNA TYPE **************" << endl;
+		cout << "     NAME        : " << Name << endl;
+		cout << "     TYPE        : " << Type << endl;
+		cout << "     POLARIZATION: " << Polarization << endl;
+		cout << "     INDEX       : " << Index << endl;
+		cout << " *****************************************" << endl;
 	}
 };
 struct ANTENNA_ELEMENT
@@ -105,6 +123,19 @@ struct ANTENNA_ELEMENT
 		Rotation_y = y;
 		Rotation_z = z;
 	}
+	void Show()
+	{
+		cout << " *********** ANTENNA ELEMENT *************" << endl;
+		cout << "     POSITION X  : " << Position_x << endl;
+		cout << "     POSITION Y  : " << Position_y << endl;
+		cout << "     POSITION Z  : " << Position_z << endl;
+		cout << "     ROTATION X  : " << Rotation_x << endl;
+		cout << "     ROTATION Y  : " << Rotation_y << endl;
+		cout << "     ROTATION Z  : " << Rotation_z << endl;
+		cout << "     CARR INDEX  : " << Carrier_Index << endl;
+		ElementType->Show();
+		cout << " *****************************************" << endl;
+	}
 };
 struct ANTENNA_ARRAY // Every antenna set is an array even if it is a single element
 {
@@ -150,9 +181,21 @@ struct ANTENNA_ARRAY // Every antenna set is an array even if it is a single ele
 				cout << " ERROR : Antenna Element is not set ." << endl;
 		}
 	}
+	void Show()
+	{
+		cout << " ************ ANTENNA ARRAY **************" << endl;
+		cout << "     NAME        : " << Name << endl;
+		cout << "     DESCRIPTION : " << Description << endl;
+		cout << "     INDEX       : " << Index << endl;
+		cout << "     CARR INDEX  : " << Carrier_Index << endl;
+		cout << " *****************************************" << endl;
+	}
 };
 struct RECEIVER
 {
+	CARRIER* Carrier;
+	ANTENNA_ARRAY* Antenna_Array;
+	float NoiseFigure;
 	RECEIVER()
 	{
 		NoiseFigure = 3.00000;
@@ -173,12 +216,21 @@ struct RECEIVER
 		}
 		NoiseFigure = noisefigure;
 	}
-	CARRIER* Carrier;
-	ANTENNA_ARRAY* Antenna_Array;
-	float NoiseFigure;
+	void Show()
+	{
+		cout << " **************** RECEIVER **************" << endl;
+		cout << "     NOISE FIGURE: " << NoiseFigure << endl;
+		Carrier->Show();
+		Antenna_Array->Show();
+		cout << " *****************************************" << endl;
+	}
+
 };
 struct TRANSMITTER
 {
+	CARRIER* Carrier;
+	ANTENNA_ARRAY* Antenna_Array;
+	float Power_dBm;
 	TRANSMITTER()
 	{
 		Power_dBm = 0.0;
@@ -199,12 +251,20 @@ struct TRANSMITTER
 		}
 		Power_dBm = power_dBm;
 	}
-	CARRIER* Carrier;
-	ANTENNA_ARRAY* Antenna_Array;
-	float Power_dBm;
+	void Show()
+	{
+		cout << " *************** TRANSMITTER *************" << endl;
+		cout << "     POWER dBm   : " << Power_dBm << endl;
+		Carrier->Show();
+		Antenna_Array->Show();
+		cout << " *****************************************" << endl;
+	}
 };
 struct POINT_LOCATION
 {
+	float X;
+	float Y;
+	float Z;
 	POINT_LOCATION()
 	{
 		X = 0.0;
@@ -217,12 +277,24 @@ struct POINT_LOCATION
 		Y = y;
 		Z = z;
 	}
-	float X;
-	float Y;
-	float Z;
+	void Show()
+	{
+		cout << " ************ POINT LOCATION *************" << endl;
+		cout << "             X   : " << X << endl;
+		cout << "             Y   : " << X << endl;
+		cout << "             Z   : " << X << endl;
+		cout << " *****************************************" << endl;
+	}
 };
 struct POINTS
 {
+	std::string Name;
+	size_t Project_id;
+	TRANSMITTER* TX;
+	RECEIVER* RX;
+	vector< POINT_LOCATION*>Point_locations;
+	bool Transmitter_exist;
+	bool Receiver_exist;
 	POINTS()
 	{
 		Project_id = 0;
@@ -269,13 +341,18 @@ struct POINTS
 		}
 		return false;
 	}
-	std::string Name;
-	size_t Project_id;
-	TRANSMITTER* TX;
-	RECEIVER* RX;
-	vector< POINT_LOCATION*>Point_locations;
-	bool Transmitter_exist;
-	bool Receiver_exist;
+	void Show()
+	{
+		cout << " ************ POINTS SET *****************" << endl;
+		cout << "         NAME    : " << Name << endl;
+		cout << "         ID      : " << Project_id << endl;
+		cout << "         TX EXIST: " << Transmitter_exist << endl;
+		cout << "         RX EXIST: " << Receiver_exist << endl;
+		if(Transmitter_exist)TX->Show();
+		if(Receiver_exist)RX->Show();
+		for (auto& l : Point_locations)l->Show();
+		cout << " *****************************************" << endl;
+	}
 };
 
 class CommunicationSystem
@@ -446,6 +523,199 @@ public:
 				cout << "		Point at : " << location->X << "," << location->Y << "," << location->Z << endl;
 			}
 		}
+	}
+	void Show2()
+	{
+		for (auto& a : AntennaTypes)
+			a->Show();
+		for (auto& t : AntennaArrays)
+			t->Show();
+		for (auto& c : Carriers)
+			c->Show();
+		for (auto& p : PointsSets)
+			p->Show();
+	}
+	void WriteTofile(std::string file_name)
+	{
+		std::stringstream converter;
+		std::string line;
+		vector<std::string> row;
+		size_t x{ 0 }; 
+	
+
+		converter << "#ANTENNA_TYPE_INDEX"; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+		converter << Antenna_Type_Index ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+		converter << "#ANTENNA_ARRAY_INDEX" ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+		converter << Antenna_Array_Index ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+		converter << "#CARRIER_INDEX" ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+		converter << Carrier_Index ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+		converter << "POINTS_SET_INDEX" ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+		converter << Points_Set_Index ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+		converter << "#ANTENNA_TYPES" ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+		for (auto& antenna_type : this->AntennaTypes)
+		{
+			if (antenna_type != nullptr)
+			{
+				converter << "##ANTENNA_TYPE" ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+				converter << antenna_type->Carrier_Index ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+				converter << antenna_type->Index ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+				converter << antenna_type->Name ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+				converter << antenna_type->Polarization ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+				converter << antenna_type->Type ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+			}
+		}
+		converter << "#ANTENNA_ARRAYS" ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+		for (auto& antenna_array : this->AntennaArrays)
+		{
+			if (antenna_array != nullptr)
+			{
+				converter << "##ANTENNA_ARRAY" ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+				converter << antenna_array->Carrier_Index ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+				converter << antenna_array->Description ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+				converter << antenna_array->Index ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+				converter << antenna_array->Name ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+				for (auto& antenna_element : antenna_array->Elements)
+				{
+					if (antenna_element != nullptr)
+					{
+						converter << "###ANTENNA_ELEMENT" ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+						converter << antenna_element->Carrier_Index ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+						converter << antenna_element->Position_x ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+						converter << antenna_element->Position_y ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+						converter << antenna_element->Position_z ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+						converter << antenna_element->Rotation_x ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+						converter << antenna_element->Rotation_y ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+						converter << antenna_element->Rotation_z ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+						if (antenna_element->ElementType != nullptr)
+						{
+							converter << "####ANTENNA_ELEMENT_TYPE" ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+							converter << antenna_element->ElementType->Index ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+						}
+					}
+				}	
+			}
+		}
+		converter << "#CARRIERS" ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+		for (auto& carrier : this->Carriers)
+		{
+			if (carrier != nullptr)
+			{
+				converter << "##CARRIER" ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+				converter << carrier->Band_Width ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+				converter << carrier->Description ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+				converter << carrier->Frequency ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+				converter << carrier->Index ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+			}
+		}
+		converter << "#POINTS_SETS" ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+		for (auto& point_set : this->PointsSets)
+		{
+			if (point_set != nullptr)
+			{
+				converter << "##POINT_SET" ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+				converter << point_set->Name ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+				converter << point_set->Project_id ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+				converter << point_set->Receiver_exist ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+				converter << point_set->Transmitter_exist ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+				if (point_set->RX != nullptr)
+				{
+					converter << "###RX" ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+					converter << point_set->RX->NoiseFigure ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+					if (point_set->RX->Antenna_Array != nullptr)
+					{
+						converter << "####RX_ANTENNA_ARRAY" ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+						converter << point_set->RX->Antenna_Array->Index ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+					}
+					if (point_set->RX->Carrier != nullptr)
+					{
+						converter << "####RX_CARRIER" ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+						converter << point_set->RX->Carrier->Index ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+					}
+				}
+				if (point_set->TX != nullptr)
+				{
+					converter << "###TX" ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+					converter << point_set->TX->Power_dBm ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+					if (point_set->TX->Antenna_Array != nullptr)
+					{
+						converter << "####TX_ANTENNA_ARRAY" ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+						converter << point_set->TX->Antenna_Array->Index ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+					}
+					if (point_set->TX->Carrier != nullptr)
+					{
+						converter << "####TX_CARRIER" ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+						converter << point_set->TX->Carrier->Index ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+					}
+				}
+				converter << "###POINTS_LOCATIONS" ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+				for(auto& point_location: point_set->Point_locations)
+					if (point_location != nullptr)
+					{
+						converter << "####POINT" ; converter >> line; converter.clear(); row.push_back(line + "\n"); line.clear();
+						converter << point_location->X ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+						converter << point_location->Y ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+						converter << point_location->Z ; converter>>line;converter.clear();row.push_back(line+"\n");line.clear();
+					}
+			}
+		}
+		Tools::Wirte_ssv_File(file_name, row);
+	}
+	void RestoreFromFile(std::string file_name);
+	void Reset()
+	{
+		for (auto& p : this->PointsSets)
+		{
+			if (p != nullptr)
+			{
+				if (p->TX != nullptr)
+					delete p->TX;
+				if (p->RX != nullptr)
+					delete p->RX;
+				for (auto& l : p->Point_locations)
+				{
+					if (l != nullptr)
+						delete l;
+				}
+				p->Point_locations.clear();
+				delete p;
+			}
+		}
+		this->PointsSets.clear();
+		for (auto& a : this->AntennaArrays)
+		{
+			if (a != nullptr)
+			{
+				for (auto& e : a->Elements)
+				{
+					if (e != nullptr)
+						delete e;
+				}
+				a->Elements.clear();
+				delete a;
+			}
+		}
+		this->AntennaArrays.clear();
+		for (auto& t : this->AntennaTypes)
+		{
+			if (t != nullptr)
+			{
+				delete t;
+			}
+		}
+		this->AntennaTypes.clear();
+		for (auto& c : this->Carriers)
+		{
+			if (c != nullptr)
+			{
+				delete c;
+			}
+		}
+		this->Carriers.clear();
+		Antenna_Type_Index = 0;
+		Antenna_Array_Index = 0;
+		Carrier_Index = 0;
+		Points_Set_Index = 0;
+
 	}
 public:
 	static size_t Antenna_Type_Index;

@@ -233,7 +233,7 @@ public:
 							s.RxPosition.Phi = Terminal_data_set.at(p).Phi;
 							s.RxPosition.R = Terminal_data_set.at(p).R;
 							s.TxPosition.Z = 500; // For testing
-							s.DirectDistance = sqrt(pow(s.TxPosition.X - s.RxPosition.X, 2) + pow(s.TxPosition.Y - s.RxPosition.Y, 2) + pow(s.TxPosition.Z - s.RxPosition.Z, 2)); cout << " Direct Distance :" << s.DirectDistance << endl;
+							s.DirectDistance = sqrt(pow(s.TxPosition.X - s.RxPosition.X, 2) + pow(s.TxPosition.Y - s.RxPosition.Y, 2) + pow(s.TxPosition.Z - s.RxPosition.Z, 2));
 							s.ElevationAngle = asin((s.TxPosition.Z - s.RxPosition.Z) / s.DirectDistance);// The Elevation angle magnitude is < 90 Degres, when it is positive the transmitter is higher , when negative , the transmitter is lower than the receiver
 							if (s.ElevationAngle > (22.0 / 7.0))s.ElevationAngle = s.ElevationAngle - (44.0 / 7.0);
 							//////////////////////////////////////////////////////////////////////

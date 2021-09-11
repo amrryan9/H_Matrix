@@ -474,6 +474,64 @@ public:
 		psi = (2.0 * (22.0 / 7.0) * spacing) * (sin(phi_array) / (sin(departure_phi) * sin(departure_theta)));
 		return psi;
 	}
+	static std::vector<string> Read_ssv_File(string file_full_path)// // Space Separated File
+	{
+		std::string file_full_path_copy{ file_full_path };
+		std::string file_name, parent_folder;
+		if (file_full_path.find('/') == -1)
+			if (file_full_path.find('\\') == -1)
+			{
+				file_name = file_full_path;
+				parent_folder = "./";
+			}
+			else
+			{
+				file_name = file_full_path_copy.substr(file_full_path.find_last_of('\\') + 1);;
+				parent_folder = file_full_path_copy.replace(file_full_path.find_last_of('\\'), file_name.size() + 1, "");;
+			}
+		else
+		{
+			file_name = file_full_path_copy.substr(file_full_path.find_last_of('/') + 1);;
+			parent_folder = file_full_path_copy.replace(file_full_path.find_last_of('/'), file_name.size() + 1, "");;
+		}
+
+	//	cout << file_name << endl;
+	//	cout << parent_folder << endl;
+
+		std::ifstream in_file{ file_full_path };
+		if (!in_file)
+		{
+			cout << file_full_path << " file is not open." << std::endl;
+			std::cerr << file_full_path <<" file is not open." << std::endl;
+			exit(1);
+		}
+
+		std::vector<string> file_contents{ std::istream_iterator<string>(in_file),std::istream_iterator<string>() };
+		return file_contents;
+	}
+	static bool Wirte_ssv_File(string file_full_path, std::vector<string>& row)// // Space Separated File
+	{
+		std::string parent_directory = file_full_path;
+		size_t position = file_full_path.find_last_of("/");
+		std::string file_name = parent_directory.substr(position);
+		parent_directory.erase(position, file_name.size());
+		file_name.erase(0, 1);
+		if (!std::filesystem::exists(parent_directory))
+		{
+			if (std::filesystem::create_directory(parent_directory))
+				cout << parent_directory << " Directory Created" << endl;
+			else 
+			{ 
+				cout << parent_directory << " Directory can't be created " << endl; return false;
+			}
+		}
+		std::ofstream out{ file_full_path , std::ios_base::out | std::ios_base::trunc };//+ extension
+		std::ostream_iterator<string> out_iter2{ out, " " };
+
+		std::copy(std::begin(row), std::end(row), out_iter2);
+		out_iter2 = "\n";
+		return true;
+	}
 	public:
 		static double CarrierFrequency;
 		static double NoisePower;
