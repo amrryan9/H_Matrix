@@ -10,11 +10,9 @@
 
 using namespace std;
 
-enum version { v3_0_01, v3_3_31 };
-enum class configuration { MIMO, SISO };
 enum angle_unit{ RAD, DEG};
-enum EXPOSURE { ALL, NLOS, LOS,NON};
 enum FILES { CIR, DOD };
+
 struct RECORD
 {
 	RECORD()
@@ -278,11 +276,7 @@ public:
 		}
 
 	}
-	static double CalculateNoisePower(double BandWidth)
-	{
-		double K = 1.38064852e-23;
-		return NoisePower = K * Temperature * BandWidth;
-	}
+	
 	static std::string GetWord(std::string source, size_t position)
 	{
 		if (source.size() > position)
@@ -304,10 +298,7 @@ public:
 		cout << " Error in conversion GetWord at position: "<<position <<" from string :"+ source<< endl;
 		return "";
 	}
-	static std::string GetTestCase()
-	{
-		return (Test_Case_str);
-	}
+	
 	static size_t Permute(size_t n,size_t s)
 	{
 		float N = static_cast<float>(n);
@@ -453,21 +444,7 @@ public:
 		angle = angle * fraction;
 		return (std::round(angle)) / fraction;
 	}
-	static void SetRESULTSFolder(EXPOSURE check)
-	{
-		switch (check)
-		{
-		case LOS:
-			Tools::RESULTSFolder = "D:/RESULTS_5/LOS/";//"D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/RESULTS/LOS/";
-			break;
-		case NLOS:
-			Tools::RESULTSFolder = "D:/RESULTS_5/NLOS/";//"D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/RESULTS/NLOS/";
-			break;
-		case ALL:
-			Tools::RESULTSFolder = "D:/RESULTS_5/ALL/";
-			break;
-		}
-	}
+	
 	static double ModelChannelGain(double spacing, double frequency, double phi_array, double departure_phi, double departure_theta)
 	{
 		double psi;
@@ -533,21 +510,7 @@ public:
 		return true;
 	}
 	public:
-		static double CarrierFrequency;
-		static double NoisePower;
-		static double Temperature;
-		static double Samples_Count;
-		static float  Test_Case;
-		static float  Spacing;
-		static float  Phi_array;
-		static double Transmitter_power;
-		static float Transmitter_height;
-		static string Test_Case_str;
-		static string RESULTSFolder;
-		static version WirelessInsiteVersion;
-		static version WirelessInsiteVersion_DOD;
-		static std::filesystem::path Cir_Folder;
-		static std::filesystem::path StudyArea_Folder;
-		static Float_matrix data_file;
+		
+		
 };
 

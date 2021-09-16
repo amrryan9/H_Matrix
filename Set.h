@@ -6,6 +6,11 @@
 
 struct T_R_Set
 {
+	T_R_Set()
+	{
+		Id = 0;
+		T_R_Points.clear();
+	}
 	T_R_Set(unsigned id, unsigned points, unsigned e)
 	{
 		Id = id;
@@ -20,6 +25,23 @@ struct T_R_Set
 		{
 			cout << " T/R Point # : " <<i <<" HAS ELEMENTs count: "<<  t_r << endl;
 		}
+	}
+	bool write(std::ofstream& ofile)
+	{
+		ofile.write(reinterpret_cast<const char*>(&Id), sizeof(unsigned));
+		unsigned size_1 = T_R_Points.size();
+		ofile.write(reinterpret_cast<const char*>(&size_1), sizeof(unsigned));
+		ofile.write(reinterpret_cast<const char*>(&T_R_Points[0]), size_1 * sizeof(element));
+		return !ofile.fail();
+	}
+	bool read(std::ifstream& ifile)
+	{
+		ifile.read(reinterpret_cast<char*>(&Id), sizeof(unsigned));
+		unsigned size_1 = 0;
+		ifile.read(reinterpret_cast<char*>(&size_1), sizeof(unsigned));
+		T_R_Points.resize(size_1);
+		ifile.read(reinterpret_cast<char*>(&T_R_Points[0]), size_1 * sizeof(element));//
+		return !ifile.fail();
 	}
 	unsigned Id;
 	vector<element>T_R_Points;
@@ -230,7 +252,7 @@ public:
 	}
 	void GetDistribution()
 	{
-		GetDistribution(Tools::RESULTSFolder + Tools::GetTestCase() + "/test_rect", Tools::RESULTSFolder + Tools::GetTestCase() + "/test_polar");
+		GetDistribution(Environment::RESULTSFolder + Environment::GetTestCase() + "/test_rect", Environment::RESULTSFolder + Environment::GetTestCase() + "/test_polar");
 	}
 	PATHS& GetPathes(unsigned  t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned tx_ele, unsigned rx_ele)
 	{
@@ -431,7 +453,6 @@ public:
 
 	void ShowRXPoints(ComplexForm form = RECT)
 	{
-		cout << "kkkkkkkkkkk" << endl;
 		/// Show The world
 		size_t rx_elements, tx_elements;
 		size_t index{ 1 };
@@ -594,6 +615,65 @@ public:
 			}
 		}
 		return pSS;
+	}
+	bool Save(std::string file)
+	{
+		bool flag{ true };
+		std::ofstream ofile2(file, std::ios::binary);
+		unsigned size_1,size_2,size_3;
+		size_1 = this->S.size(); 
+		size_2 = this->Transmitters.size(); 
+		size_3 = this->Receivers.size();
+		if (ofile2.is_open())
+		{
+			ofile2.write(reinterpret_cast<const char*>(&size_1), sizeof(unsigned));
+			ofile2.write(reinterpret_cast<const char*>(&size_2), sizeof(unsigned));
+			ofile2.write(reinterpret_cast<const char*>(&size_3), sizeof(unsigned)); 
+			for (auto& s : this->S)
+				flag = flag * s.write(ofile2);
+			for (auto& s : this->Transmitters)
+				flag = flag * s.write(ofile2);
+			for (auto& s : this->Receivers)
+				flag = flag * s.write(ofile2);
+			ofile2.close();
+		}
+		return flag * !ofile2.fail();
+	}
+	bool Load(std::string file)
+	{
+		std::ifstream ifile2(file, std::ios::binary);
+		unsigned size_1{ 0 }, size_2{ 0 }, size_3{ 0 };
+		bool flag{ true };
+
+		if (ifile2.is_open())
+		{
+			ifile2.read(reinterpret_cast<char*>(&size_1), sizeof(unsigned)); 
+			ifile2.read(reinterpret_cast<char*>(&size_2), sizeof(unsigned)); 
+			ifile2.read(reinterpret_cast<char*>(&size_3), sizeof(unsigned)); 
+			this->S.clear();
+			for (size_t i = 0; i < size_1; i++)
+			{
+				Set_Line l;
+				flag=flag * l.read(ifile2);
+				this->S.push_back(l);
+			}
+			this->Transmitters.clear();
+			for (size_t i = 0; i < size_2; i++)
+			{
+				T_R_Set tr;
+				flag = flag * tr.read(ifile2);
+				this->Transmitters.push_back(tr);
+			}
+			this->Receivers.clear();
+			for (size_t i = 0; i < size_3; i++)
+			{
+				T_R_Set tr;
+				flag = flag * tr.read(ifile2);
+				this->Receivers.push_back(tr);
+			}
+			ifile2.close();
+		}
+		return flag * !ifile2.fail();
 	}
 //////////////////// Creating another set based on a criteria ///////////////////////////////////////////////////////
 

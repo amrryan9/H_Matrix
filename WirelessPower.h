@@ -17,6 +17,7 @@ class WirelessPower
 public:
 	WirelessPower()
 	{
+	//	V = Complex_matrix();
 	}
 	WirelessPower(Complex_matrix v)
 	{
@@ -249,6 +250,14 @@ public:
 	{
 		Complex_matrix  p=this->PowerPhasor();
 		p.Show(POLAR);
+	}
+	bool write(std::ofstream& ofile)
+	{
+		return V.write(ofile);
+	}
+	bool read(std::ifstream& ifile)
+	{
+		return V.read(ifile);
 	}
 public:
 	Complex_matrix V;

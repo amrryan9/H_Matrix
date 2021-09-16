@@ -2,9 +2,11 @@
 #include<complex>
 #include<iostream>
 #include<iomanip>
+#include<fstream>
 #include<math.h>
 #include <functional> 
 #include"Tools.h"
+#include"Environment.h"
 #include<matrix.h>
 using namespace std;
 struct Direction
@@ -28,7 +30,18 @@ class Ray
 public:
 	Ray()
 	{
-		Ray(0, 0, 0, 0, 0);
+		this->Arrival.Phi = 0;
+		this->Arrival.Theta =0;
+		this->Departure.Phi = 0;
+		this->Departure.Theta = 0;
+		this->Arrival_Time = 0;
+		this->Path_ID = 0;
+		this->Path_Number = 0;
+		this->Phase = 0;
+		this->Power = 0;
+		this->Source_ID = 0;
+		this->Voltage_Value = static_cast<Complex>(0);
+		this->Interactions = 0;
 	}
 	Ray(const Ray& ray)
 	{
@@ -189,7 +202,7 @@ public:
 	void ShowRay()
 	{
 		size_t n = 20;
-		double Calculated_Phase = (2 * (22.0 / 7.0) * Tools::CarrierFrequency * Arrival_Time);// -Tools::ModelChannelGain(Tools::Spacing, Tools::CarrierFrequency, Tools::Phi_array, Departure.Phi, Departure.Theta);//
+		double Calculated_Phase = (2 * (22.0 / 7.0) * Environment::CarrierFrequency * Arrival_Time);// -Tools::ModelChannelGain(Tools::Spacing, Tools::CarrierFrequency, Tools::Phi_array, Departure.Phi, Departure.Theta);//
 		double Calculated_Phase_mod =-1* std::fmod(Calculated_Phase,(44.0 / 7.0));
 		cout << Path_ID;				space<unsigned int>(Path_ID, n);
 		cout << Source_ID ;				space<unsigned int>(Source_ID, n);
@@ -223,6 +236,43 @@ public:
 		cout << "Voltage        :" << setw(15) << 20 * log10(abs(Voltage_Value)) << "|_ " << arg(Voltage_Value) * 180 * 7 / 22 << " V dB|_deg" << endl;
 
 	}
+	bool write(std::ofstream& ofile)
+	{
+		ofile.write(reinterpret_cast<char*>(&(this->Path_ID)), sizeof(this->Path_ID));
+		ofile.write(reinterpret_cast<char*>(&(this->Path_Number)), sizeof(unsigned));
+		ofile.write(reinterpret_cast<char*>(&(this->Interactions)), sizeof(unsigned));
+		ofile.write(reinterpret_cast<char*>(&(this->Source_ID)), sizeof(unsigned));
+		ofile.write(reinterpret_cast<char*>(&(this->Power)), sizeof(double));
+		ofile.write(reinterpret_cast<char*>(&(this->Phase)), sizeof(double));
+		ofile.write(reinterpret_cast<char*>(&(this->Arrival_Time)), sizeof(double));
+		ofile.write(reinterpret_cast<char*>(&(this->Arrival.Phi)), sizeof(double));
+		ofile.write(reinterpret_cast<char*>(&(this->Arrival.Theta)), sizeof(double));
+		ofile.write(reinterpret_cast<char*>(&(this->Departure.Phi)), sizeof(double));
+		ofile.write(reinterpret_cast<char*>(&(this->Departure.Theta)), sizeof(double));
+		ofile.write(reinterpret_cast<char*>(&(this->Voltage_Value)), sizeof(complex<double>));
+
+		return !ofile.fail();
+	}
+
+	bool read(std::ifstream& ifile)
+	{
+		ifile.read(reinterpret_cast<char*>(&(this->Path_ID)), sizeof(this->Path_ID));
+		ifile.read(reinterpret_cast<char*>(&(this->Path_Number)), sizeof(unsigned));
+		ifile.read(reinterpret_cast<char*>(&(this->Interactions)), sizeof(unsigned));
+		ifile.read(reinterpret_cast<char*>(&(this->Source_ID)), sizeof(unsigned));
+		ifile.read(reinterpret_cast<char*>(&(this->Power)), sizeof(double));
+		ifile.read(reinterpret_cast<char*>(&(this->Phase)), sizeof(double));
+		ifile.read(reinterpret_cast<char*>(&(this->Arrival_Time)), sizeof(double));
+		ifile.read(reinterpret_cast<char*>(&(this->Arrival.Phi)), sizeof(double));
+		ifile.read(reinterpret_cast<char*>(&(this->Arrival.Theta)), sizeof(double));
+		ifile.read(reinterpret_cast<char*>(&(this->Departure.Phi)), sizeof(double));
+		ifile.read(reinterpret_cast<char*>(&(this->Departure.Theta)), sizeof(double));
+		ifile.read(reinterpret_cast<char*>(&(this->Voltage_Value)), sizeof(complex<double>));
+
+		return !ifile.fail();
+	}
+	friend std::ofstream& operator<<(std::ofstream& ofile, Ray const& r);
+	friend std::ifstream& operator>>(std::ifstream& ifile, Ray& r);
 public:
 	int Path_ID;
 	unsigned Path_Number;
@@ -235,4 +285,40 @@ public:
 	Direction Departure;
 	Complex Voltage_Value;
 };
+/*
+std::ofstream& operator<<(std::ofstream& ofile, Ray const& r)
+{
+	ofile.write(reinterpret_cast<const char*>(&r.Path_ID), sizeof(r.Path_ID));
+	ofile.write(reinterpret_cast<const char*>(&r.Path_Number), sizeof(r.Path_Number));
+	ofile.write(reinterpret_cast<const char*>(&r.Interactions), sizeof(r.Interactions));
+	ofile.write(reinterpret_cast<const char*>(&r.Source_ID), sizeof(r.Source_ID));
+	ofile.write(reinterpret_cast<const char*>(&r.Power), sizeof(r.Power));
+	ofile.write(reinterpret_cast<const char*>(&r.Phase), sizeof(r.Phase));
+	ofile.write(reinterpret_cast<const char*>(&r.Arrival_Time), sizeof(r.Arrival_Time));
+	ofile.write(reinterpret_cast<const char*>(&r.Arrival.Phi), sizeof(r.Arrival.Phi));
+	ofile.write(reinterpret_cast<const char*>(&r.Arrival.Theta), sizeof(r.Arrival.Theta));
+	ofile.write(reinterpret_cast<const char*>(&r.Departure.Phi), sizeof(r.Departure.Phi));
+	ofile.write(reinterpret_cast<const char*>(&r.Departure.Theta), sizeof(r.Departure.Theta));
+	ofile.write(reinterpret_cast<const char*>(&r.Voltage_Value), sizeof(r.Voltage_Value));
 
+	return ofile;
+}
+
+std::ifstream& operator>>(std::ifstream& ifile,Ray& r)
+{
+	ifile.read(reinterpret_cast<char*>(&r.Path_ID), sizeof(r.Path_ID));
+	ifile.read(reinterpret_cast<char*>(&r.Path_Number), sizeof(r.Path_Number));
+	ifile.read(reinterpret_cast<char*>(&r.Interactions), sizeof(r.Interactions));
+	ifile.read(reinterpret_cast<char*>(&r.Source_ID), sizeof(r.Source_ID));
+	ifile.read(reinterpret_cast<char*>(&r.Power), sizeof(r.Power));
+	ifile.read(reinterpret_cast<char*>(&r.Phase), sizeof(r.Phase));
+	ifile.read(reinterpret_cast<char*>(&r.Arrival_Time), sizeof(r.Arrival_Time));
+	ifile.read(reinterpret_cast<char*>(&r.Arrival.Phi), sizeof(r.Arrival.Phi));
+	ifile.read(reinterpret_cast<char*>(&r.Arrival.Theta), sizeof(r.Arrival.Theta));
+	ifile.read(reinterpret_cast<char*>(&r.Departure.Phi), sizeof(r.Departure.Phi));
+	ifile.read(reinterpret_cast<char*>(&r.Departure.Theta), sizeof(r.Departure.Theta));
+	ifile.read(reinterpret_cast<char*>(&r.Voltage_Value), sizeof(r.Voltage_Value));
+
+	return ifile;
+}
+*/

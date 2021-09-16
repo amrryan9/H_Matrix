@@ -13,7 +13,7 @@
 #include <complex>						//// between each antenna element of each transmitter to each antenna element 
 #include <iomanip>						//// at each receiver, plus a topology data, with positions of the receiver points
 #include <cmath>						//// and the orientation of the antenna array
-#include "H_Item.h"
+#include "H_Item.h"						//////////////////////////////////////////
 #include "Ray.h"
 #include "Set.h"
 #include "Tools.h"
@@ -24,7 +24,74 @@ using namespace std;
 
 typedef std::vector<std::string> string_vector;
 //enum version{v3_0_01,v3_3_31 };
-
+enum class POINTS_SOURCE{FILE,SYST};
+struct TX_POWER
+{
+	TX_POWER()
+	{
+		TX_SET = 0;
+		TX_POINT = 0;
+		TX_POWER_WATT = 0.0;
+	}
+	TX_POWER(unsigned tx_set,unsigned tx_point,	float tx_power_watt)
+	{
+		TX_SET = tx_set;
+		TX_POINT = tx_point;
+		TX_POWER_WATT = tx_power_watt;
+	}
+	unsigned TX_SET;
+	unsigned TX_POINT;
+	float TX_POWER_WATT;
+};
+struct TRANSMITTER_POWER
+{
+	TRANSMITTER_POWER() {}
+	TRANSMITTER_POWER(CommunicationSystem& syst)
+	{
+		for (auto& point_set : syst.PointsSets)
+			if (point_set->Transmitter_exist)
+			{
+				unsigned j = 0;
+				for (auto& i : point_set->Point_locations)
+				{
+					j++;
+					AddTransmitter(point_set->Project_id, j, pow(10.0, point_set->TX->Power_dBm / 10) / 1000);
+				}
+			}
+	}
+	float GetPower(unsigned tx_set, unsigned tx_point)
+	{
+		for(auto& t: POWER_WATT)
+			if (t.TX_POINT == tx_point && t.TX_SET == tx_set)
+			{
+				return t.TX_POWER_WATT;
+			}
+	}
+	void AddTransmitter(unsigned tx_set, unsigned tx_point, float tx_power_watt)
+	{
+		POWER_WATT.push_back(TX_POWER(tx_set, tx_point, tx_power_watt));
+	}
+	void AddTransmitters(CommunicationSystem& syst)
+	{
+		for (auto& point_set : syst.PointsSets)
+			if (point_set->Transmitter_exist)
+			{
+				unsigned j = 0;
+				for (auto& i : point_set->Point_locations)
+				{
+					j++;
+					AddTransmitter(point_set->Project_id, j, pow(10.0, point_set->TX->Power_dBm / 10) / 1000);
+				}
+			}
+	}
+	void Show()
+	{
+		cout << setw(8) << "Tx Set" << setw(9) << "Tx Point" << setw(9) << "Power(W)" << endl;
+		for (auto& t : POWER_WATT)
+			cout << setw(8) << t.TX_SET << setw(9) << t.TX_POINT << setw(9) << t.TX_POWER_WATT << endl;
+	}
+	std::vector<TX_POWER> POWER_WATT;
+};
 class File_Processing
 {
 public:
@@ -42,12 +109,12 @@ public:
 		if (std::filesystem::create_directories(case_path))
 		{
 			cout << case_path.string() << " EXISTS " << endl;
-			Tools::data_file.WriteFile(Tools::RESULTSFolder + Tools::GetTestCase() + "/Capacity_Test_Data.txt");
+			Environment::data_file.WriteFile(Environment::RESULTSFolder + Environment::GetTestCase() + "/Capacity_Test_Data.txt");
 		}
 		else
 		{
 			cout << case_path.string() << "Already EXISTS " << endl;
-			Tools::data_file.WriteFile(Tools::RESULTSFolder + Tools::GetTestCase() + "/Capacity_Test_Data.txt");
+			Environment::data_file.WriteFile(Environment::RESULTSFolder + Environment::GetTestCase() + "/Capacity_Test_Data.txt");
 			//	exit(1);
 		}
 	}
@@ -65,26 +132,11 @@ public:
 		return true;
 	}
 	
-	void CreateResultsFolder(std::string file_in_teminals_positions, std::string file_in_transmitter_power)
-	{
-		std::array< EXPOSURE, 3>Expo = { LOS,NLOS,ALL };
-		for (EXPOSURE exposure : Expo)
-		{
-			Tools::SetRESULTSFolder(exposure);
-		//	cout << file_in_teminals_positions << endl; cout << Tools::RESULTSFolder + Tools::GetTestCase() + "/Terminals_positions.txt" << endl;
-			std::filesystem::create_directory(Tools::RESULTSFolder + Tools::GetTestCase());
-			//**********COPYING TERMINALS POSITION FILE TO RESULTS FOLDER ****************************
-			std::filesystem::copy_file(file_in_teminals_positions, Tools::RESULTSFolder + Tools::GetTestCase() + "/Terminals_positions.txt", filesystem::copy_options::overwrite_existing);
-			//**********COPYING TRANSMITTER POWER FILE TO RESULTS FOLDER ****************************
-			std::filesystem::copy_file(file_in_transmitter_power, Tools::RESULTSFolder + Tools::GetTestCase() + "/Transmitter_power.txt", filesystem::copy_options::overwrite_existing);
-			//**********WORKS ONLY FOR 1 TRANSMITTER AND BUNCH OF RECEIVERS***************************
-		}
-	}
-	inline Set read_directory(const std::string& cir_path,Environment* environ=0)
+	inline Set read_directory(const std::string& cir_path, CommunicationSystem* syst=nullptr)
 	{
 		std::stringstream converter;
 		//*************************************************************************
-		Tools::Cir_Folder = cir_path;
+		Environment::Cir_Folder = cir_path;
 		///**************** Get directory that contains the files ***************
 		
 		std::string Position_Power_directory{ cir_path };
@@ -92,81 +144,11 @@ public:
 		{
 			std::string last_folder = Position_Power_directory.substr(Position_Power_directory.find_last_of('/'));
 			Position_Power_directory.replace(Position_Power_directory.find_last_of('/'), last_folder.size(), "");
-			if (folder == 0)Tools::StudyArea_Folder = Position_Power_directory;
+			if (folder == 0)Environment::StudyArea_Folder = Position_Power_directory;
 		}
 		cout << " EBERY THING POSITION :" << Position_Power_directory << endl;
-		cout << " STUDY AREA FOLDER    :" << Tools::StudyArea_Folder << endl;
+		cout << " STUDY AREA FOLDER    :" << Environment::StudyArea_Folder << endl;
 		///**************** Reading Transmitter Power****************************
-		string file_in_transmitter_power{ Position_Power_directory + "/Transmitter_power.txt" }; 
-		std::ifstream in_transmitter_power{ file_in_transmitter_power };
-		if (!in_transmitter_power)
-		{
-			std::cerr << " Transmitter_Power file is not open." << std::endl;
-			exit(1);
-		}
-		std::vector<string> transmitter_power_file{ std::istream_iterator<string>(in_transmitter_power),std::istream_iterator<string>() };
-		double transmitter_power_watt;
-		size_t Total_receiver_points;
-		float Carrier_Frequency;
-		float Bandwidth, Spacing, Phi_array;
-		size_t Samples_Count;
-		size_t item = 0;
-		size_t Transmitter_Elements_Count, Receiver_Elements_Count;
-		float Case;
-		size_t groups, Centered, Feature;
-		for (auto xx : transmitter_power_file) {
-			if (item == 0) { converter << static_cast<std::string>(xx); converter >> transmitter_power_watt;				converter.clear(); }
-			else if (item == 1)  { converter << static_cast<std::string>(xx); converter >> Tools::Transmitter_height;		converter.clear(); }
-			else if (item == 2)  { converter << static_cast<std::string>(xx); converter >> Total_receiver_points;			converter.clear(); }
-			else if (item == 3)  { converter << static_cast<std::string>(xx); converter >> Carrier_Frequency; 				converter.clear(); }
-			else if (item == 4)  { converter << static_cast<std::string>(xx); converter >> Bandwidth;						converter.clear(); }
-			else if (item == 5)  { converter << static_cast<std::string>(xx); converter >> Spacing;							converter.clear(); }
-			else if (item == 6)  { converter << static_cast<std::string>(xx); converter >> Samples_Count;					converter.clear(); }
-			else if (item == 7)  { converter << static_cast<std::string>(xx); converter >> Transmitter_Elements_Count;		converter.clear(); }
-			else if (item == 8)  { converter << static_cast<std::string>(xx); converter >> Receiver_Elements_Count; 		converter.clear(); }
-			else if (item == 9)  { converter << static_cast<std::string>(xx); converter >> Case; Tools::Test_Case_str = xx;	converter.clear(); }
-			else if (item == 10) { converter << static_cast<std::string>(xx); converter >> groups; 							converter.clear(); }
-			else if (item == 11) { converter << static_cast<std::string>(xx); converter >> Centered; 						converter.clear(); }
-			else if (item == 12) { converter << static_cast<std::string>(xx); converter >> Feature; 						converter.clear(); }
-			else if (item == 13) { converter << static_cast<std::string>(xx); converter >> Phi_array; 						converter.clear(); }
-			item++;
-		}
-		cout << " Transmitter Power     : " << 10 * log10(1000 * transmitter_power_watt) << " dBm" << endl; Tools::Transmitter_power = transmitter_power_watt;
-		cout << " Transmitter Height    : " << Tools::Transmitter_height << " Meters" << endl;
-		cout << " Total Receiver Points : " << Total_receiver_points << endl;
-		cout << " Carrier Frequency     : " << Carrier_Frequency << " Hz" << endl; Tools::CarrierFrequency = Carrier_Frequency;
-		cout << " Bandwidth             : " << Bandwidth << " Hz" << endl;
-		cout << " Spacing               : " << Spacing << " Lambda" << endl; Tools::Spacing = Spacing;
-		cout << " Samples Count         : " << Samples_Count << endl;
-		cout << " Transmitter Elements  : " << Transmitter_Elements_Count << endl;
-		cout << " Receiver Elements     : " << Receiver_Elements_Count << endl;
-		cout << " Case#                 : " << Case << endl;
-		cout << " Aixes Groups          : " << groups << endl;
-		cout << " Centerted             : " << Centered << endl;
-		cout << " Feature               : " << Feature << "(0:No, 1: City)" << endl;
-		cout << " Array Azimuth angle   : " << Phi_array << endl; Tools::Phi_array = Phi_array*22.0/(7.0*180.0);
-		cout << " Beam Angle            : " << 90-Phi_array << endl;
-		if (transmitter_power_watt <= 0) {
-			cout << " Error with Transmitter Power Value , it sould be > 0" << endl;
-			exit;
-		}
-		
-		Tools::data_file.AddItem(0, 0, 10 * log10(1000 * transmitter_power_watt));
-		Tools::data_file.AddItem(0, 1, Tools::Transmitter_height);
-		Tools::data_file.AddItem(0, 2, Total_receiver_points);
-		Tools::data_file.AddItem(0, 3, Carrier_Frequency);
-		Tools::data_file.AddItem(0, 4, Bandwidth);
-		Tools::data_file.AddItem(0, 5, Spacing);
-		Tools::data_file.AddItem(0, 6, Tools::CalculateNoisePower(Bandwidth));
-		Tools::data_file.AddItem(0, 7, Tools::Samples_Count = static_cast<double>(Samples_Count));
-		Tools::data_file.AddItem(0, 8, static_cast<double>(Transmitter_Elements_Count));
-		Tools::data_file.AddItem(0, 9, static_cast<double>(Receiver_Elements_Count));
-		Tools::data_file.AddItem(0, 10, Tools::Test_Case = Case);
-		Tools::data_file.AddItem(0, 11, static_cast<double>(groups));
-		Tools::data_file.AddItem(0, 12, static_cast<double>(Centered));
-		Tools::data_file.AddItem(0, 13, static_cast<double>(Feature));
-	//	Tools::data_file.AddItem(0, 14, static_cast<size_t>(exposure));
-		Tools::data_file.AddItem(0, 15, static_cast<double>(Phi_array)); // If needed
 		
 		//***************** Creating Power Folder Path ******************************
 		std::string power_path = cir_path;
@@ -181,8 +163,15 @@ public:
 		std::filesystem::path dod = dod_path;
 		cout << " DOD PATH IS : " << dod_path << endl;
 		//************************* APPLY *********************************************
+		TRANSMITTER_POWER transmitter_power_watt;
+		if (syst != nullptr)
+			transmitter_power_watt.AddTransmitters(*syst);
+		else
+			transmitter_power_watt.AddTransmitter(1,1, Environment::ReadTestCaseData(Position_Power_directory + "/Transmitter_power.txt"));
+
+		transmitter_power_watt.Show();
 		Set MIMO_H_MATRIX;
-		ReadDirection(cir_path,transmitter_power_watt, MIMO_H_MATRIX, FILES::CIR);
+		ReadDirection(cir_path, transmitter_power_watt, MIMO_H_MATRIX, FILES::CIR);
 		if(CheckIfFolderExist(dod_path))
 			ReadDirection(dod_path, transmitter_power_watt, MIMO_H_MATRIX, FILES::DOD);
 		MIMO_H_MATRIX.SetExposure();
@@ -190,26 +179,27 @@ public:
 		//************** CREATING TERMINALS DATA SET **********************************
 		//************** READING TERMINALS _POSITIONS FILE*****************************
 		std::vector<Terminal> Terminal_data_set;
-//		if(environ!=0)Terminal_data_set = environ->GetPositionDataSet(); // This has to be changed when the environment class is finished
-//		else
-	//	{
-			string file_in_teminals_positions{ Position_Power_directory + "/Terminals_positions.txt" };
+		CommunicationSystem Syst;
+		string file_in_teminals_positions{ Position_Power_directory + "/Terminals_positions.txt" };
+		if(syst!=nullptr)
+			/***Update the Set with points positions********/
+			SetPointsPositions(MIMO_H_MATRIX, *syst);
+			/***********************************************/
+		else
+		{
 			Terminal_data_set = Environment::GetPositionDataSetFromFile(file_in_teminals_positions);
+			/***Update the Set with points positions**************/
+			SetPointsPositions(MIMO_H_MATRIX, Terminal_data_set);
+			/*****************************************************/
 			//*****************************************************************************
-			CreateResultsFolder(file_in_teminals_positions, file_in_transmitter_power);
+			Environment::CreateResultsFolder(file_in_teminals_positions, Position_Power_directory + "/Transmitter_power.txt");//file_in_transmitter_power
 			//*****************************************************************************
-		//	return MIMO_H_MATRIX;
-	//	}
+		}
 		
-		/***********Update the Set with points positions************************************/
-		SetPointsPositions(MIMO_H_MATRIX, Terminal_data_set);
-		/***********************************************/
-		
-		
-	//	cout << " Total Number of Points" << MIMO_H_MATRIX.S.size() << " Number of " << " LOS" << " Points is " << MIMO_H_MATRIX.GetEXPO(EXPOSURE::LOS).S.size() << endl;
+
 	//	MIMO_H_MATRIX.PermutateBack();
-	//	MIMO_H_MATRIX.Show();
-		return MIMO_H_MATRIX;// .GetEXPO(exposure);
+
+		return MIMO_H_MATRIX;
 	}
 	//////////////////////////////////////////////////////////
 	void SetPointsPositions(Set& MIMO_H_MATRIX, std::vector<Terminal>& Terminal_data_set)
@@ -307,10 +297,10 @@ public:
 	EXPOSURE CheckPathes(std::vector<Ray> pathes, bool DOD_EXIST)
 	{
 		version TEST;
-		if (DOD_EXIST)TEST = Tools::WirelessInsiteVersion_DOD;
-		else TEST = Tools::WirelessInsiteVersion;
+		if (DOD_EXIST)TEST = WirelessInsiteFiles::WirelessInsiteVersion_DOD;
+		else TEST = WirelessInsiteFiles::WirelessInsiteVersion;
 		size_t LOS_Path_ID{ 1 };
-		switch (Tools::WirelessInsiteVersion_DOD)
+		switch (WirelessInsiteFiles::WirelessInsiteVersion_DOD)
 		{
 		case v3_0_01:
 			LOS_Path_ID = 0;
@@ -375,7 +365,7 @@ public:
 		pathes.push_back(r);
 	}
 	//////////////////////////////////////////////////////////
-	void ReadDirection(std::string path_folder, double transmitter_power_watt, Set& MIMO_H_MATRIX, FILES FILE_TYPE)
+	void ReadDirection(std::string path_folder, TRANSMITTER_POWER&  transmitter_power_watt, Set& MIMO_H_MATRIX, FILES FILE_TYPE)
 	{
 		///////////////////////////////// START //////////////////////////////////////////////////////
 		std::string path;
@@ -518,8 +508,8 @@ public:
 					case v3_0_01:
 						///////////// READING ///////////////////
 						//cout << "Version : 3.0.01" << endl;
-						Tools::WirelessInsiteVersion = v3_0_01;
-						Tools::WirelessInsiteVersion_DOD = v3_0_01;
+						WirelessInsiteFiles::WirelessInsiteVersion = v3_0_01;
+						WirelessInsiteFiles::WirelessInsiteVersion_DOD = v3_0_01;
 						//////////////////////////////////////////
 						i = 0;
 						path_id = 0;
@@ -568,8 +558,8 @@ public:
 						///////////// READING ///////////////////
 						//cout << "Version : 3.3.31" << endl;
 						i = 0;
-						Tools::WirelessInsiteVersion = v3_3_31;
-						Tools::WirelessInsiteVersion_DOD = v3_3_31;
+						WirelessInsiteFiles::WirelessInsiteVersion = v3_3_31;
+						WirelessInsiteFiles::WirelessInsiteVersion_DOD = v3_3_31;
 						//////////////////////////////////////////
 						cir_file_size = static_cast<int>(cir_file.size());
 						while (i < (cir_file_size - (start_at + 4)))
@@ -603,7 +593,7 @@ public:
 					case FILES::CIR:
 						for (auto& p : pathes)
 						{
-							ray_path.Set(p.Path_ID, p.Source_ID, p.Power / transmitter_power_watt, p.Phase, p.Arrival_Time);
+							ray_path.Set(p.Path_ID, p.Source_ID, p.Power / transmitter_power_watt.GetPower(transmitter_id, transmitter_pt), p.Phase, p.Arrival_Time);
 							ray_sum = ray_sum + ray_path.Voltage_Value;
 							power_ray.Set(p.Path_ID, p.Source_ID, p.Power, p.Phase, p.Arrival_Time);
 							ray_Power_sum = ray_Power_sum + power_ray.Voltage_Value;

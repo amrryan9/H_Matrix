@@ -8,6 +8,8 @@
 #include"Tools.h"
 #include"CommunicationSystem.h"
 using namespace std;
+
+enum version { v3_0_01, v3_3_31 };
 class WirelessInsiteFiles
 {
 public:
@@ -539,16 +541,11 @@ public:
 	}
 	public:
 		std::string City_File;
-//		std::string TxRx_File;
 		std::string Project_Name;
 		std::string Project_Folder;
 		std::string Study_Area_Folder;
-		//ANTENNA_ARRAY Antenna_Array_Terminal;
-		//ANTENNA_ARRAY Antenna_Array_BS;
-		//CARRIER Carrier;
-		//TRANSMITTER Tx;
-		//RECEIVER Rx;
-		//POINTS Points;
 		CommunicationSystem CommSystem;
+		static version WirelessInsiteVersion;
+		static version WirelessInsiteVersion_DOD;
 };
 

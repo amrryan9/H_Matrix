@@ -3,14 +3,15 @@
 #include<complex>
 #include<iostream>
 #include<sstream>
-#include <matrix.h>
+#include<matrix.h>
 #include"WirelessPower.h"
+#include"WirelessInsiteFiles.h"
 #include"Ray.h"
 
 enum class PROPERITIES { EMPTY_PROP, TX_SET, RX_SET, TX_POINT, RX_POINT, DIRECT_DISTANCE, RADIAL_DISTANCE, HEIGHT, THETA, PHI, POWER_dBm };
 using namespace std;
 
-struct POSITION { 
+struct POSITION {
 	float Distance;
 	float Height;
 	float Theta;
@@ -32,9 +33,52 @@ struct POSITION {
 		Z = 0.0;
 
 	}
+	POSITION(
+		float distance,
+		float height,
+		float theta,
+		float phi,
+		float r,
+		float x,
+		float y,
+		float z)
+	{
+		Distance = distance;
+		Height = height;
+		Theta = theta;
+		Phi = phi;
+		R = r;
+		X = x;
+		Y = y;
+		Z = z;
+	}
 	void Show()
 	{
-		cout<< " POSITION TX-RX   :\n\t DISTANCE      : "<<setw(10)<< Distance <<" METERS\n\t HEIGHT        : " << setw(10) << Height   <<" METERS\n\t ANGLE_ELEV    : " << setw(10) << Theta    <<"   RADS\n\t ANGLE_AZIMUTH : " << setw(10)<< Phi      <<"   RADS\n\t R" << setw(10) << R << "   METERS" << endl;
+		cout << " POSITION TX-RX  \n\t DISTANCE      : " << setw(10) << Distance << " METERS\n\t HEIGHT        : " << setw(10) << Height << " METERS\n\t ANGLE_ELEV    : " << setw(10) << Theta << "   RADS\n\t ANGLE_AZIMUTH : " << setw(10) << Phi << "   RADS\n\t R             : " << setw(10) << R << " METERS" << endl;
+	}
+	bool write(std::ofstream& ofile)const
+	{
+		ofile.write(reinterpret_cast<const char*>(&Distance), sizeof(float));
+		ofile.write(reinterpret_cast<const char*>(&Height), sizeof(float));
+		ofile.write(reinterpret_cast<const char*>(&Theta), sizeof(float));
+		ofile.write(reinterpret_cast<const char*>(&Phi), sizeof(float));
+		ofile.write(reinterpret_cast<const char*>(&R), sizeof(float));
+		ofile.write(reinterpret_cast<const char*>(&X), sizeof(float));
+		ofile.write(reinterpret_cast<const char*>(&Y), sizeof(float));
+		ofile.write(reinterpret_cast<const char*>(&Z), sizeof(float));
+		return !ofile.fail();
+	}
+	bool read(std::ifstream& ifile)
+	{
+		ifile.read(reinterpret_cast<char*>(&Distance), sizeof(float));
+		ifile.read(reinterpret_cast<char*>(&Height), sizeof(float));
+		ifile.read(reinterpret_cast<char*>(&Theta), sizeof(float));
+		ifile.read(reinterpret_cast<char*>(&Phi), sizeof(float));
+		ifile.read(reinterpret_cast<char*>(&R), sizeof(float));
+		ifile.read(reinterpret_cast<char*>(&X), sizeof(float));
+		ifile.read(reinterpret_cast<char*>(&Y), sizeof(float));
+		ifile.read(reinterpret_cast<char*>(&Z), sizeof(float));
+		return !ifile.fail();
 	}
 };
 
@@ -77,10 +121,11 @@ struct PATHS
 	void SHOWPATH()
 	{
 		cout << " *************************** " << endl;
+		cout << " KEY        : " << KEY << endl;
 		cout << " TX_ELEMENT : " << TX_ELEMENT << endl;
 		cout << " RX_ELEMENT : " << RX_ELEMENT << endl;
-		cout << " SPACING : " << Tools::Spacing << endl;
-		cout << " Array AZIMUTH ANGLE : " << Tools::Phi_array << endl;
+		cout << " SPACING    : " << Environment::Spacing << endl;
+		cout << " Array AZIMUTH ANGLE : " << Environment::Phi_array << endl;
 
 
 		cout << " PATH ID" << setw(20);
@@ -110,6 +155,44 @@ struct PATHS
 			return true;
 		else
 			return false;
+	}
+	bool write(std::ofstream& ofile)
+	{
+		bool flag{ true };
+		ofile.write(reinterpret_cast<const char*>(&TX_ELEMENT), sizeof(unsigned));
+		ofile.write(reinterpret_cast<const char*>(&RX_ELEMENT), sizeof(unsigned));
+		unsigned size_1 = KEY.size();
+		ofile.write(reinterpret_cast<const char*>(&size_1), sizeof(unsigned));
+		ofile.write(reinterpret_cast<const char*>(&KEY[0]), size_1*sizeof(char));
+		unsigned size_2 = RAYS.size();
+		ofile.write(reinterpret_cast<const char*>(&size_2), sizeof(unsigned));
+		for (auto& r : RAYS)
+			flag=flag* r.write(ofile);
+		ofile.write(reinterpret_cast<const char*>(&EXPO), sizeof(EXPOSURE));
+		return flag * !ofile.fail();
+	}
+	bool read(std::ifstream& ifile)
+	{
+		bool flag{ true };
+		ifile.read(reinterpret_cast<char*>(&TX_ELEMENT), sizeof(unsigned));
+		ifile.read(reinterpret_cast<char*>(&RX_ELEMENT), sizeof(unsigned));
+		unsigned size_1 = 0;
+		ifile.read(reinterpret_cast<char*>(&size_1), sizeof(unsigned));
+		string buffer; buffer.resize(size_1);
+		ifile.read(reinterpret_cast<char*>(&buffer[0]), size_1 * sizeof(char));
+		KEY = buffer;
+		unsigned size_2 = 0;
+		ifile.read(reinterpret_cast<char*>(&size_2), sizeof(unsigned));
+		this->RAYS.clear();
+		
+		for (size_t i = 0; i < size_2; i++)
+		{
+			Ray ray;
+			flag = flag * ray.read(ifile);
+			RAYS.push_back(ray);
+		}
+		ifile.read(reinterpret_cast<char*>(&EXPO), sizeof(EXPOSURE));
+		return flag *!ifile.fail();
 	}
 	unsigned TX_ELEMENT;
 	unsigned RX_ELEMENT;
@@ -204,6 +287,8 @@ public:
 	void Show()
 	{
 		cout << endl;
+		cout << "    ____________________________ START LINK _________________________"<<endl;
+		
 		cout << " \t NUMBER OF TRANSMITTER ELEMENTS IN THE TRANSMITTER ARRAY : " << M.Rows_Count << endl;
 		cout << " \t NUMBER OF RECEIVER    ELEMENTS IN THE RECEIVER    ARRAY : " << M.Columns_Count << endl;
 		std::cout << " KEY :" << this->Key << endl;
@@ -219,7 +304,9 @@ public:
 		std::cout << " DIRECT DISTANCE  : " << this->DirectDistance << endl;
 		std::cout << " ELEVATION ANGLE  : " << this->ElevationAngle<< endl;
 		this->RxPosition.Show();
+		std::cout << " H                : " << this->ElevationAngle << endl;
 		this->M.Show(RECT);
+		cout << "    _______________________________ END LINK ___________________________" << endl;
 	}
 	void ShowBrief()
 	{
@@ -271,7 +358,7 @@ public:
 		}
 
 		size_t LOS_Path_ID{1};
-		switch (Tools::WirelessInsiteVersion)
+		switch (WirelessInsiteFiles::WirelessInsiteVersion)
 		{
 		case v3_0_01:
 			LOS_Path_ID = 0;
@@ -402,7 +489,67 @@ public:
 			break;
 		}
 	}
+	bool write(std::ofstream& ofile)
+	{
+		bool flag{ true };
+		unsigned size_1 = Key.size();
+		ofile.write(reinterpret_cast<const char*>(&size_1), sizeof(unsigned));
+		ofile.write(reinterpret_cast<const char*>(&Key[0]), size_1 * sizeof(char));
+		ofile.write(reinterpret_cast<const char*>(&Transmitter_Set), sizeof(unsigned));
+		ofile.write(reinterpret_cast<const char*>(&Receiver_Set), sizeof(unsigned));
+		ofile.write(reinterpret_cast<const char*>(&Transmitter_Point), sizeof(unsigned));
+		ofile.write(reinterpret_cast<const char*>(&Receiver_Point), sizeof(unsigned));
+		ofile.write(reinterpret_cast<const char*>(&DirectDistance), sizeof(float));
+		ofile.write(reinterpret_cast<const char*>(&ElevationAngle), sizeof(float));
+		flag = flag * M.write(ofile);
+		flag = flag * this->Q.write(ofile);
+		flag = flag * this->RxPosition.write(ofile);
+		flag = flag * this->TxPosition.write(ofile);
+		flag = flag * this->Power.write(ofile);
 
+		unsigned size_2 = Pathes.size();
+		ofile.write(reinterpret_cast<const char*>(&size_2), sizeof(unsigned));
+		for (auto& p : this->Pathes)
+			flag=flag*p.write(ofile);
+		ofile.write(reinterpret_cast<const char*>(&Expose), sizeof(EXPOSURE));
+	
+		return flag * !ofile.fail();
+	}
+	bool read(std::ifstream& ifile)
+	{
+		bool flag{ true };
+		unsigned size_1 = 0;
+		ifile.read(reinterpret_cast<char*>(&size_1), sizeof(unsigned));
+		string buffer; buffer.resize(size_1);
+		ifile.read(reinterpret_cast<char*>(&buffer[0]), size_1 * sizeof(char));
+		Key = buffer;
+
+		ifile.read(reinterpret_cast<char*>(&Transmitter_Set), sizeof(unsigned));
+		ifile.read(reinterpret_cast<char*>(&Receiver_Set), sizeof(unsigned));
+		ifile.read(reinterpret_cast<char*>(&Transmitter_Point), sizeof(unsigned));
+		ifile.read(reinterpret_cast<char*>(&Receiver_Point), sizeof(unsigned));
+		ifile.read(reinterpret_cast<char*>(&DirectDistance), sizeof(float));
+		ifile.read(reinterpret_cast<char*>(&ElevationAngle), sizeof(float));
+		flag = flag * M.read(ifile);
+		flag = flag * this->Q.read(ifile);
+		flag = flag * this->RxPosition.read(ifile);
+		flag = flag * this->TxPosition.read(ifile);
+		flag = flag * this->Power.read(ifile);
+		
+		unsigned size_2 = 0;
+		ifile.read(reinterpret_cast<char*>(&size_2), sizeof(unsigned));
+		
+		this->Pathes.clear();
+		for (size_t i = 0; i < size_2; i++)
+		{
+			PATHS path;
+			flag = flag * path.read(ifile);
+			this->Pathes.push_back(path);
+		}
+		ifile.read(reinterpret_cast<char*>(&Expose), sizeof(EXPOSURE));
+		
+		return !ifile.fail();
+	}
 public:
 	std::string Key;
 	unsigned  Transmitter_Set;

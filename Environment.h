@@ -1,8 +1,16 @@
 #pragma once
 #include<iostream>
 #include<iomanip>
+#include<vector>
+#include<array>
+#include <filesystem>					
+#include <sstream>
+#include <matrix.h>
 using namespace std;
 // This class creates the terminals position destribution and simulation environment 
+enum class configuration { MIMO, SISO };
+enum EXPOSURE { ALL, NLOS, LOS, NON };
+
 
 struct Terminal
 {
@@ -84,16 +92,137 @@ public:
 		string file_in_teminals_positions{ Position_Power_directory + "/Terminals_positions.txt" };
 		TerminalPositionsFile = file_in_teminals_positions;
 	}
-	void CreateProject()
+	static double ReadTestCaseData(string file_path)
 	{
+		std::stringstream converter;
+		//string file_in_transmitter_power{ Position_Power_directory + "/Transmitter_power.txt" }; PREVIOUSLAY NAMMED Transmitter_power.txt
+		std::ifstream in_transmitter_power{ file_path };    //file_in_transmitter_power 
+		if (!in_transmitter_power)
+		{
+			std::cerr << " Transmitter_Power file is not open." << std::endl;
+			exit(1);
+		}
+		std::vector<string> transmitter_power_file{ std::istream_iterator<string>(in_transmitter_power),std::istream_iterator<string>() };
+		float transmitter_power_watt;
+		size_t Total_receiver_points;
+		float Carrier_Frequency;
+		float Bandwidth, Spacing, Phi_array;
+		size_t Samples_Count;
+		size_t item = 0;
+		size_t Transmitter_Elements_Count, Receiver_Elements_Count;
+		float Case;
+		size_t groups, Centered, Feature;
+		for (auto xx : transmitter_power_file) {
+			if (item == 0) { converter << static_cast<std::string>(xx); converter >> transmitter_power_watt;				converter.clear(); }
+			else if (item == 1) { converter << static_cast<std::string>(xx); converter >> Environment::Transmitter_height;		converter.clear(); }
+			else if (item == 2) { converter << static_cast<std::string>(xx); converter >> Total_receiver_points;			converter.clear(); }
+			else if (item == 3) { converter << static_cast<std::string>(xx); converter >> Carrier_Frequency; 				converter.clear(); }
+			else if (item == 4) { converter << static_cast<std::string>(xx); converter >> Bandwidth;						converter.clear(); }
+			else if (item == 5) { converter << static_cast<std::string>(xx); converter >> Spacing;							converter.clear(); }
+			else if (item == 6) { converter << static_cast<std::string>(xx); converter >> Samples_Count;					converter.clear(); }
+			else if (item == 7) { converter << static_cast<std::string>(xx); converter >> Transmitter_Elements_Count;		converter.clear(); }
+			else if (item == 8) { converter << static_cast<std::string>(xx); converter >> Receiver_Elements_Count; 		converter.clear(); }
+			else if (item == 9) { converter << static_cast<std::string>(xx); converter >> Case; Environment::Test_Case_str = xx;	converter.clear(); }
+			else if (item == 10) { converter << static_cast<std::string>(xx); converter >> groups; 							converter.clear(); }
+			else if (item == 11) { converter << static_cast<std::string>(xx); converter >> Centered; 						converter.clear(); }
+			else if (item == 12) { converter << static_cast<std::string>(xx); converter >> Feature; 						converter.clear(); }
+			else if (item == 13) { converter << static_cast<std::string>(xx); converter >> Phi_array; 						converter.clear(); }
+			item++;
+		}
+		cout << " Transmitter Power     : " << 10 * log10(1000 * transmitter_power_watt) << " dBm" << endl; Environment::Transmitter_power = transmitter_power_watt;
+		cout << " Transmitter Height    : " << Environment::Transmitter_height << " Meters" << endl;
+		cout << " Total Receiver Points : " << Total_receiver_points << endl;
+		cout << " Carrier Frequency     : " << Carrier_Frequency << " Hz" << endl; //Environment::CarrierFrequency = Carrier_Frequency;
+		cout << " Bandwidth             : " << Bandwidth << " Hz" << endl;
+		cout << " Spacing               : " << Spacing << " Lambda" << endl; Environment::Spacing = Spacing;
+		cout << " Samples Count         : " << Samples_Count << endl;
+		cout << " Transmitter Elements  : " << Transmitter_Elements_Count << endl;
+		cout << " Receiver Elements     : " << Receiver_Elements_Count << endl;
+		cout << " Case#                 : " << Case << endl;
+		cout << " Aixes Groups          : " << groups << endl;
+		cout << " Centerted             : " << Centered << endl;
+		cout << " Feature               : " << Feature << "(0:No, 1: City)" << endl;
+		cout << " Array Azimuth angle   : " << Phi_array << endl; Environment::Phi_array = Phi_array * 22.0 / (7.0 * 180.0);
+		cout << " Beam Angle            : " << 90 - Phi_array << endl;
+		if (transmitter_power_watt <= 0) {
+			cout << " Error with Transmitter Power Value , it sould be > 0" << endl;
+			exit;
+		}
 
+		Environment::data_file.AddItem(0, 0, 10 * log10(1000 * transmitter_power_watt));
+		Environment::data_file.AddItem(0, 1, Environment::Transmitter_height);
+		Environment::data_file.AddItem(0, 2, Total_receiver_points);
+		Environment::data_file.AddItem(0, 3, Carrier_Frequency);
+		Environment::data_file.AddItem(0, 4, Bandwidth);
+		Environment::data_file.AddItem(0, 5, Spacing);
+	//	Environment::data_file.AddItem(0, 6, Environment::CalculateNoisePower(Bandwidth));
+		Environment::data_file.AddItem(0, 7, Environment::Samples_Count = static_cast<double>(Samples_Count));
+		Environment::data_file.AddItem(0, 8, static_cast<double>(Transmitter_Elements_Count));
+		Environment::data_file.AddItem(0, 9, static_cast<double>(Receiver_Elements_Count));
+		Environment::data_file.AddItem(0, 10, Environment::Test_Case = Case);
+		Environment::data_file.AddItem(0, 11, static_cast<double>(groups));
+		Environment::data_file.AddItem(0, 12, static_cast<double>(Centered));
+		Environment::data_file.AddItem(0, 13, static_cast<double>(Feature));
+		//	Environment::data_file.AddItem(0, 14, static_cast<size_t>(exposure));
+		Environment::data_file.AddItem(0, 15, static_cast<double>(Phi_array)); // If needed
+
+		return transmitter_power_watt;
 	}
-	void WirelessInSite_3()
+
+	static void CreateResultsFolder(std::string file_in_teminals_positions, std::string file_in_transmitter_power)
 	{
-		
-		
+		std::array< EXPOSURE, 3>Expo = { LOS,NLOS,ALL };
+		for (EXPOSURE exposure : Expo)
+		{
+			Environment::SetRESULTSFolder(exposure);
+			//	cout << file_in_teminals_positions << endl; cout << Environment::RESULTSFolder + Environment::GetTestCase() + "/Terminals_positions.txt" << endl;
+			std::filesystem::create_directory(Environment::RESULTSFolder + Environment::GetTestCase());
+			//**********COPYING TERMINALS POSITION FILE TO RESULTS FOLDER ****************************
+			std::filesystem::copy_file(file_in_teminals_positions, Environment::RESULTSFolder + Environment::GetTestCase() + "/Terminals_positions.txt", filesystem::copy_options::overwrite_existing);
+			//**********COPYING TRANSMITTER POWER FILE TO RESULTS FOLDER ****************************
+			std::filesystem::copy_file(file_in_transmitter_power, Environment::RESULTSFolder + Environment::GetTestCase() + "/Transmitter_power.txt", filesystem::copy_options::overwrite_existing);
+			//**********WORKS ONLY FOR 1 TRANSMITTER AND BUNCH OF RECEIVERS***************************
+		}
 	}
+	static std::string GetTestCase()
+	{
+		return (Test_Case_str);
+	}
+	static void SetRESULTSFolder(EXPOSURE check)
+	{
+		switch (check)
+		{
+		case LOS:
+			Environment::RESULTSFolder = "D:/RESULTS_5/LOS/";//"D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/RESULTS/LOS/";
+			break;
+		case NLOS:
+			Environment::RESULTSFolder = "D:/RESULTS_5/NLOS/";//"D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/RESULTS/NLOS/";
+			break;
+		case ALL:
+			Environment::RESULTSFolder = "D:/RESULTS_5/ALL/";
+			break;
+		}
+	}
+//	static double CalculateNoisePower(double BandWidth)
+//	{
+//		double K = 1.38064852e-23;
+//		return NoisePower = K * Temperature * BandWidth;
+//	}
 public:
+	static double CarrierFrequency;
+	//static double NoisePower;
+	//static double Temperature;
+	static double Samples_Count;
+	static float  Test_Case;
+	static float  Spacing;
+	static float  Phi_array;
+	static double Transmitter_power;
+	static float Transmitter_height;
+	static string Test_Case_str;
+	static string RESULTSFolder;
+	static std::filesystem::path Cir_Folder;
+	static std::filesystem::path StudyArea_Folder;
 	std::string TerminalPositionsFile;
+	static Float_matrix data_file;
 };
 
