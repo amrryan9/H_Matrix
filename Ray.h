@@ -281,44 +281,7 @@ public:
 	double Power; // Power magnitude in Watts
 	double Phase; // Phase Angle in rad of power vector
 	double Arrival_Time; // Time in seconds
-	Direction Arrival;
-	Direction Departure;
+	Direction Arrival; // Angles in Rad
+	Direction Departure;// Angles in Rad
 	Complex Voltage_Value;
 };
-/*
-std::ofstream& operator<<(std::ofstream& ofile, Ray const& r)
-{
-	ofile.write(reinterpret_cast<const char*>(&r.Path_ID), sizeof(r.Path_ID));
-	ofile.write(reinterpret_cast<const char*>(&r.Path_Number), sizeof(r.Path_Number));
-	ofile.write(reinterpret_cast<const char*>(&r.Interactions), sizeof(r.Interactions));
-	ofile.write(reinterpret_cast<const char*>(&r.Source_ID), sizeof(r.Source_ID));
-	ofile.write(reinterpret_cast<const char*>(&r.Power), sizeof(r.Power));
-	ofile.write(reinterpret_cast<const char*>(&r.Phase), sizeof(r.Phase));
-	ofile.write(reinterpret_cast<const char*>(&r.Arrival_Time), sizeof(r.Arrival_Time));
-	ofile.write(reinterpret_cast<const char*>(&r.Arrival.Phi), sizeof(r.Arrival.Phi));
-	ofile.write(reinterpret_cast<const char*>(&r.Arrival.Theta), sizeof(r.Arrival.Theta));
-	ofile.write(reinterpret_cast<const char*>(&r.Departure.Phi), sizeof(r.Departure.Phi));
-	ofile.write(reinterpret_cast<const char*>(&r.Departure.Theta), sizeof(r.Departure.Theta));
-	ofile.write(reinterpret_cast<const char*>(&r.Voltage_Value), sizeof(r.Voltage_Value));
-
-	return ofile;
-}
-
-std::ifstream& operator>>(std::ifstream& ifile,Ray& r)
-{
-	ifile.read(reinterpret_cast<char*>(&r.Path_ID), sizeof(r.Path_ID));
-	ifile.read(reinterpret_cast<char*>(&r.Path_Number), sizeof(r.Path_Number));
-	ifile.read(reinterpret_cast<char*>(&r.Interactions), sizeof(r.Interactions));
-	ifile.read(reinterpret_cast<char*>(&r.Source_ID), sizeof(r.Source_ID));
-	ifile.read(reinterpret_cast<char*>(&r.Power), sizeof(r.Power));
-	ifile.read(reinterpret_cast<char*>(&r.Phase), sizeof(r.Phase));
-	ifile.read(reinterpret_cast<char*>(&r.Arrival_Time), sizeof(r.Arrival_Time));
-	ifile.read(reinterpret_cast<char*>(&r.Arrival.Phi), sizeof(r.Arrival.Phi));
-	ifile.read(reinterpret_cast<char*>(&r.Arrival.Theta), sizeof(r.Arrival.Theta));
-	ifile.read(reinterpret_cast<char*>(&r.Departure.Phi), sizeof(r.Departure.Phi));
-	ifile.read(reinterpret_cast<char*>(&r.Departure.Theta), sizeof(r.Departure.Theta));
-	ifile.read(reinterpret_cast<char*>(&r.Voltage_Value), sizeof(r.Voltage_Value));
-
-	return ifile;
-}
-*/

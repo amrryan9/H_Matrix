@@ -7,7 +7,7 @@
 #include"WirelessPower.h"
 #include"WirelessInsiteFiles.h"
 #include"Ray.h"
-
+enum class SHOW_HEADER { HEADER_ON, HEADER_OFF };
 enum class PROPERITIES { EMPTY_PROP, TX_SET, RX_SET, TX_POINT, RX_POINT, DIRECT_DISTANCE, RADIAL_DISTANCE, HEIGHT, THETA, PHI, POWER_dBm };
 using namespace std;
 
@@ -144,6 +144,13 @@ struct PATHS
 			r.ShowRay();
 		}
 		cout << " *************************** " << endl;
+	}
+	void SHOWPATHS(SHOW_HEADER h=SHOW_HEADER::HEADER_OFF)
+	{
+		// Print a path as a line, with only IDs , power and geometry
+		if(h==SHOW_HEADER::HEADER_ON)cout << setw(10) << "PATH ID" << setw(10) << "SOURCE ID" << setw(20) << "POWER(dBm)" << setw(20) << "PHASE(RAD)" << setw(20) << "ARRIVAL TIME(S)" << setw(25) << "ARRIVAL AZIMUTH(DEG)" << setw(25) << "ARRIVAL ZENITH(DEG)" << setw(25) << "DEPARTURE AZIMUTH(DEG)" << setw(25) << "DEPARTURE ZENITH(DEG)" << endl;
+		for(auto& r:RAYS)
+			cout << setw(10) << r.Path_ID << setw(10) << r.Source_ID << setw(20) << Tools::Round(20*log10(r.Power*1000),2) << setw(20) << Tools::Round(r.Phase,2) << setw(20) << Tools::Round2(r.Arrival_Time,2) << setw(25) << Tools::Round((r.Arrival.Phi*180*7/22),2) << setw(25) << Tools::Round((r.Arrival.Theta * 180 * 7 / 22), 2) << setw(25) << Tools::Round((r.Departure.Phi * 180 * 7 / 22), 2) << setw(25) << Tools::Round((r.Departure.Theta * 180 * 7 / 22), 2) << endl;
 	}
 	void SETKEY(std::string key)
 	{
@@ -284,6 +291,102 @@ public:
 	{
 		return this->Power.Rceiver_Average_Power();
 	}
+	EXPOSURE SetExposure()
+	{
+		bool goforward = false;
+		for (auto& p : this->Pathes)
+		{
+			if (p.RAYS.size() > 0)
+			{
+				goforward = true;
+				break;
+			}
+		}
+
+		if (!goforward)
+		{
+			this->Expose = NON;
+			return NON;
+		}
+
+		size_t LOS_Path_ID{ 1 };
+		switch (WirelessInsiteFiles::WirelessInsiteVersion)
+		{
+		case v3_0_01:
+			LOS_Path_ID = 0;
+			break;
+		case v3_3_31:
+			LOS_Path_ID = 1;
+			break;
+		default:
+			LOS_Path_ID = 1;
+			break;
+		}
+		for (auto& p : this->Pathes)
+		{
+			p.EXPO = NON;
+			for (auto& r : p.RAYS)
+			{
+				if (r.Path_ID == LOS_Path_ID)
+				{
+					p.EXPO = LOS;
+					break;
+				}
+				else if (r.Path_ID != -1)
+				{
+					p.EXPO = NLOS;
+				}
+				else if (r.Path_ID == -1)//SISO
+				{
+					if (r.Interactions == 0)
+					{
+						p.EXPO = LOS;
+						break;
+					}
+					else if (r.Interactions != -1)
+					{
+						p.EXPO = NLOS;
+					}
+					else
+					{
+						//	p.EXPO = NON;
+						//	break;
+					}
+				}
+			}
+		}
+		for (auto& p : this->Pathes)
+		{
+			if (p.EXPO == LOS)
+			{
+				this->Expose = LOS;
+				return LOS;
+			}
+		}
+		for (auto& p : this->Pathes)
+			if (p.EXPO == NLOS)
+			{
+				this->Expose = NLOS;
+				return NLOS;
+			}
+		this->Expose = NON;
+		return NON;
+
+	}
+	static std::string PrintExposure(EXPOSURE expose)
+	{
+		switch (expose)
+		{
+		case EXPOSURE::ALL:
+			return "ALL";
+		case EXPOSURE::LOS:
+			return "LOS";
+		case EXPOSURE::NLOS:
+			return "NLOS";
+		case EXPOSURE::NON:
+			return "NON";
+		}
+	}
 	void Show()
 	{
 		cout << endl;
@@ -316,11 +419,12 @@ public:
 	{
 		cout<<Power.GetItem(tx_element, rx_element)<<endl;
 	}
-	void ShowPathes()
+	void ShowPathes(SHOW_HEADER h = SHOW_HEADER::HEADER_OFF)
 	{
+		if (h == SHOW_HEADER::HEADER_ON)cout << setw(10) << "PATH ID" << setw(10) << "SOURCE ID" << setw(20) << "POWER(dBm)" << setw(20) << "PHASE(RAD)" << setw(20) << "ARRIVAL TIME(S)" << setw(25) << "ARRIVAL AZIMUTH(DEG)" << setw(25) << "ARRIVAL ZENITH(DEG)" << setw(25) << "DEPARTURE AZIMUTH(DEG)" << setw(25) << "DEPARTURE ZENITH(DEG)" << endl;
 		for (auto p : this->Pathes)
 		{
-			p.SHOW();
+			p.SHOWPATHS(SHOW_HEADER::HEADER_OFF);
 		}
 	}
 	void ShowPathes(unsigned tx_ele, unsigned rx_ele)
@@ -339,102 +443,6 @@ public:
 			p.SHOWPATH();
 	}
 	
-	EXPOSURE SetExposure()
-	{
-		bool goforward = false;
-		for (auto& p : this->Pathes)
-		{
-			if (p.RAYS.size() > 0)
-			{
-				goforward = true;
-				break;
-			}
-		}
-
-		if (!goforward)
-		{
-			this->Expose = NON;
-			return NON;
-		}
-
-		size_t LOS_Path_ID{1};
-		switch (WirelessInsiteFiles::WirelessInsiteVersion)
-		{
-		case v3_0_01:
-			LOS_Path_ID = 0;
-			break;
-		case v3_3_31:
-			LOS_Path_ID = 1;
-			break;
-		default:
-			LOS_Path_ID = 1;
-			break;
-		}
-		for (auto& p : this->Pathes)
-		{
-			p.EXPO = NON;
-			for (auto& r : p.RAYS)
-			{
-				if (r.Path_ID== LOS_Path_ID)
-				{
-					p.EXPO = LOS;
-					break;
-				}
-				else if (r.Path_ID != -1)
-				{
-					p.EXPO = NLOS;
-				}
-				else if (r.Path_ID == -1)//SISO
-				{
-					if (r.Interactions == 0)
-					{
-						p.EXPO = LOS;
-						break;
-					}
-					else if (r.Interactions != -1)
-					{
-						p.EXPO = NLOS;
-					}
-					else
-					{
-					//	p.EXPO = NON;
-					//	break;
-					}
-				}
-			}
-		}
-		for (auto& p : this->Pathes)
-		{
-			if (p.EXPO == LOS)
-			{
-				this->Expose = LOS;
-				return LOS;
-			}
-		}
-		for (auto& p : this->Pathes)
-			if (p.EXPO == NLOS)
-			{
-				this->Expose = NLOS;
-				return NLOS;
-			}
-		this->Expose = NON;
-		return NON;
-		
-	}
-	static std::string PrintExposure(EXPOSURE expose)
-	{
-		switch (expose)
-		{
-		case EXPOSURE::ALL:
-			return "ALL";
-		case EXPOSURE::LOS:
-			return "LOS";
-		case EXPOSURE::NLOS:
-			return "NLOS";
-		case EXPOSURE::NON:
-			return "NON";
-		}
-	}
 	bool CheckProperity(PROPERITIES properity, double max, double min=0.0)
 	{
 		switch (properity)

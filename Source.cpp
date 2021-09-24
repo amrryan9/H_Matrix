@@ -54,11 +54,11 @@ int main()
 	//*****************************
 */
 
-	E->SetTerminalsPositionsFileDirectory("D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/" + Tools::ConvertToString(847));
-	S = f->read_directory("D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/" + Tools::ConvertToString(847) + "/MIMO_BS_UAV_TERMINALS/cir");
-	S.Save("D:/first_set2.set");
-//	S1.Load("D:/first_set.set");
-	S.GetEXPO(EXPOSURE::NLOS).Filter(PROPERITIES::POWER_dBm, 0, -32, PROPERITIES::DIRECT_DISTANCE, 112, 12.9, PROPERITIES::RADIAL_DISTANCE, 25)->ShowRXPoints(POLAR);//WriteRXPoints("D:/trail.csv", POLAR);// 
+//	E->SetTerminalsPositionsFileDirectory("D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/" + Tools::ConvertToString(847));
+//	S = f->read_directory("D:/Wireless Insite/MIMO_UAV_Projects/DATA_SET/" + Tools::ConvertToString(847) + "/MIMO_BS_UAV_TERMINALS/cir");
+//	S.Save("D:/first_set2.set");
+	S1.Load("D:/first_set.set");
+	S1.GetEXPO(EXPOSURE::NON).Show();// .Filter(PROPERITIES::POWER_dBm, 0, -32, PROPERITIES::DIRECT_DISTANCE, 112, 12.9, PROPERITIES::RADIAL_DISTANCE, 25)->ShowRXPoints(POLAR);//WriteRXPoints("D:/trail.csv", POLAR);// 
 //	S.ShowRXPoints(POLAR);
 //	S1.ShowRXPoints(POLAR);
 // 

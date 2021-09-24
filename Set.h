@@ -497,7 +497,9 @@ public:
 						cout << setw(static_cast<size_t>(200.0 / (static_cast<float>(rx_elements) * static_cast<float>(tx_elements)))) << Tools::PrintComplex(l.M.GetItem(i, j), form, 3)<<"  ";
 					}
 				cout << endl;
+			//	l.ShowPathes(SHOW_HEADER::HEADER_ON);
 				index++;
+
 			}
 		}
 	}
