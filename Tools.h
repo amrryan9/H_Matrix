@@ -335,63 +335,6 @@ public:
 		return Result;
 
 	}
-	static double Round(double n,float d)
-	{
-		double value = static_cast<int>((n) * pow(10.0,d) + .5);
-			return static_cast<double>(value / pow(10.0, d));
-	}
-	static double Round2(double n, float d)
-	{
-		std::stringstream converter;
-		string number,exponent;
-		int e{ 0 };
-		double n2{ n };
-		float m,m_rounded;
-		converter << n; converter >> number; converter.clear();
-		int position = number.find("e");
-		if(position <0)position = number.find("E");
-		if (position > 0)
-		{
-			exponent = number.substr(position + 1);
-			converter << exponent; converter >> e;
-			m = n * pow(10, -1 * e);
-			m_rounded = Round(m, d);
-			return m_rounded * pow(10, e);
-		}
-		else // Make sure the rounding dosn't kill the value
-			return Tools::Round(n,d+4);
-		
-
-	}
-	static string PrintComplex(Complex n, ComplexForm form, float d)
-	{
-		std::stringstream converter;
-		string A, B,joint;
-		double a{ 0.0 }, b{ 0.0 };
-		switch (form)
-		{
-		case RECT:
-			a = Tools::Round2(std::real(n), d);
-			b = Tools::Round2(std::imag(n), d);
-		//	cout << " n= " << n << "a = " << a << "b = " << b <<endl;
-			if (b < 0 || b==0)
-			{
-				joint = "-j";
-				b = b * -1;
-			}
-			else
-				joint = "+j";
-			break;
-		case POLAR:
-			a = std::abs(n);
-			b = std::arg(n);
-			joint = "|_ ";
-			break;
-		}
-		converter << a; converter >> A; converter.clear();
-		converter << b; converter >> B; converter.clear();
-		return A + joint + B;
-	}
 	static size_t RePermute(size_t n, size_t s)
 	{
 		float N = static_cast<float>(n);
@@ -416,6 +359,63 @@ public:
 		//	cout << " " << n << " IS PERMUTED TO :" << Result << endl;
 		return Result;
 
+	}
+	static double Round(double n, float d)
+	{
+		double value = static_cast<int>((n)*pow(10.0, d) + .5);
+		return static_cast<double>(value / pow(10.0, d));
+	}
+	static double Round2(double n, float d)
+	{
+		std::stringstream converter;
+		string number, exponent;
+		int e{ 0 };
+		double n2{ n };
+		float m, m_rounded;
+		converter << n; converter >> number; converter.clear();
+		int position = number.find("e");
+		if (position < 0)position = number.find("E");
+		if (position > 0)
+		{
+			exponent = number.substr(position + 1);
+			converter << exponent; converter >> e;
+			m = n * pow(10, -1 * e);
+			m_rounded = Round(m, d);
+			return m_rounded * pow(10, e);
+		}
+		else // Make sure the rounding dosn't kill the value
+			return Tools::Round(n, d + 4);
+
+
+	}
+	static string PrintComplex(Complex n, ComplexForm form, float d)
+	{
+		std::stringstream converter;
+		string A, B, joint;
+		double a{ 0.0 }, b{ 0.0 };
+		switch (form)
+		{
+		case RECT:
+			a = Tools::Round2(std::real(n), d);
+			b = Tools::Round2(std::imag(n), d);
+			//	cout << " n= " << n << "a = " << a << "b = " << b <<endl;
+			if (b < 0 || b == 0)
+			{
+				joint = "-j";
+				b = b * -1;
+			}
+			else
+				joint = "+j";
+			break;
+		case POLAR:
+			a = std::abs(n);
+			b = std::arg(n);
+			joint = "|_ ";
+			break;
+		}
+		converter << a; converter >> A; converter.clear();
+		converter << b; converter >> B; converter.clear();
+		return A + joint + B;
 	}
 	static float RoundAngles(angle_unit unit, float angle, size_t round_digits)
 	{
@@ -443,13 +443,6 @@ public:
 		float fraction = pow(10, round_digits);
 		angle = angle * fraction;
 		return (std::round(angle)) / fraction;
-	}
-	
-	static double ModelChannelGain(double spacing, double frequency, double phi_array, double departure_phi, double departure_theta)
-	{
-		double psi;
-		psi = (2.0 * (22.0 / 7.0) * spacing) * (sin(phi_array) / (sin(departure_phi) * sin(departure_theta)));
-		return psi;
 	}
 	static std::vector<string> Read_ssv_File(string file_full_path)// // Space Separated File
 	{
