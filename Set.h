@@ -114,33 +114,11 @@ public:
 			}
 			// Check for error rays and delete them
 			PATHS CopyP = P;
-		//	CopyP.SHOW();
 			P.RAYS.clear();
-		//	P.SHOW();
 			for (auto& rr : CopyP.RAYS)
 				if (rr.Arrival_Time >= 0.0)
 					P.RAYS.push_back(rr);
 			
-		//	P.SHOW();
-			/*
-			size_t j{ 0 };
-			size_t intial_size = P.RAYS.size();
-			for (size_t i=0;i< intial_size;i++)
-			{
-				if (i < P.RAYS.size())
-				{
-					if (j < P.RAYS.size())
-					{
-						if (P.RAYS.at(j).Arrival_Time < 0)
-						{
-							P.RAYS.erase(P.RAYS.begin() + j);
-						}
-						else
-							j++;
-					}
-				}
-			}
-			*/
 			// Is It Done ::
 			
 			for (auto& rr : (this->GetPathes(t_set, r_set, t_point, r_point, r, c)).RAYS)
@@ -157,29 +135,6 @@ public:
 			cout << " CIR Pathes count : " << P.RAYS.size() << endl;
 			cout << " DOD Pathes count : " << pathes_angles.size() << endl;
 		}
-
-		/*
-		for (auto& ray : pathes_angles)
-		{
-			found = false;
-			for (auto& my_ray : P.RAYS)
-			{
-				if (ray.CheckTheSameRay(my_ray))
-				{
-					//Update
-					my_ray.SetArrival(ray.Arrival.Theta, ray.Arrival.Phi);
-					my_ray.SetDeparture(ray.Departure.Theta, ray.Departure.Phi);
-					found = true;
-					break;
-				}
-			}
-			if (!found)
-			{
-				cout << " RAY NOT FOUND " << endl;
-			//	ray.Show();
-			}
-		}
-		*/
 		return true;
 	}
 	void AddTopologyItem(unsigned t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned t_element, unsigned r_element)

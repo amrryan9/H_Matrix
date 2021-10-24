@@ -90,8 +90,9 @@ int main()
 //	S3 = (S1.GetPureLOS());//.Filter(PROPERITIES::MEAN_ARRIVAL_TIME,5.0e-7,0)
 	S3 = (S1.GetNormDelayLOS().OmitLOS());//
 	//S3.ShowRXPoints();
+	S3.ShowPathes();
 //	S2 = S.GetEXPO(EXPOSURE::NLOS);
-///*
+/*
 	size_t array_elements_UAV{ 4 };
 	size_t array_elements_UE{ 2 };
 	float s = 0.0536; //(3e8 / (2 * 2.8e9));
@@ -108,7 +109,7 @@ int main()
 	x[2] = ComplexF(-3.9858 + 0.3364i);
 	x[3] = ComplexF(0.5877 + 0.8909i);
 	cout << " std : " << Std<ComplexF>(x) << endl;
-//*/
+*/
 //	cout << "***************************************************" << endl;
 //	CommunicationSystem* System_2 = new CommunicationSystem();
 //	System_2->RestoreFromFile("D:/test2.ssv");
