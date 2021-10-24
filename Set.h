@@ -92,40 +92,94 @@ public:
 		//Update rays with angles 
 		//Get Ray 
 		PATHS& P = (this->GetPathes(t_set, r_set, t_point, r_point, r, c));
-		unsigned i = 0;
-		if (pathes_angles.size() == P.RAYS.size())
-		{
+		bool found = false;
+		if (pathes_angles.size() == P.RAYS.size()) // Modified Like that because there are error rays that is rejected at CIR and isn't at DOD
+		{ 
+			//*****************START************************
+			size_t i{ 0 };
 			for (auto& ray : pathes_angles)
 			{
-				if (i < P.RAYS.size())
+				if (ray.CheckTheSameRay(P.RAYS.at(i)))
 				{
-					if (ray.CheckTheSameRay(P.RAYS.at(i)))
-					{
-						//Update
-						P.RAYS.at(i).SetArrival(ray.Arrival.Theta, ray.Arrival.Phi);
-						P.RAYS.at(i).SetDeparture(ray.Departure.Theta, ray.Departure.Phi);
-						i++;
-					}
-					else
-					{
-						cout << " MISMATCH #1" << endl;
-						return false;
-					}
+					P.RAYS.at(i).Arrival = ray.Arrival;
+					P.RAYS.at(i).Departure = ray.Departure;
 				}
 				else
 				{
 					cout << " MISMATCH #2" << endl;
-					return false;
+					P.RAYS.at(i).Show();
+					ray.Show();
+				}
+				i++;
+			}
+			// Check for error rays and delete them
+			PATHS CopyP = P;
+		//	CopyP.SHOW();
+			P.RAYS.clear();
+		//	P.SHOW();
+			for (auto& rr : CopyP.RAYS)
+				if (rr.Arrival_Time >= 0.0)
+					P.RAYS.push_back(rr);
+			
+		//	P.SHOW();
+			/*
+			size_t j{ 0 };
+			size_t intial_size = P.RAYS.size();
+			for (size_t i=0;i< intial_size;i++)
+			{
+				if (i < P.RAYS.size())
+				{
+					if (j < P.RAYS.size())
+					{
+						if (P.RAYS.at(j).Arrival_Time < 0)
+						{
+							P.RAYS.erase(P.RAYS.begin() + j);
+						}
+						else
+							j++;
+					}
 				}
 			}
+			*/
+			// Is It Done ::
+			
+			for (auto& rr : (this->GetPathes(t_set, r_set, t_point, r_point, r, c)).RAYS)
+				if (rr.Arrival_Time < 0)
+				{
+					cout << " Double Check :";
+					rr.Show();
+				}
+			//******************END*************************
 		}
 		else
 		{
 			cout << " MISMATCH #3" << endl;
 			cout << " CIR Pathes count : " << P.RAYS.size() << endl;
 			cout << " DOD Pathes count : " << pathes_angles.size() << endl;
-			return false;
 		}
+
+		/*
+		for (auto& ray : pathes_angles)
+		{
+			found = false;
+			for (auto& my_ray : P.RAYS)
+			{
+				if (ray.CheckTheSameRay(my_ray))
+				{
+					//Update
+					my_ray.SetArrival(ray.Arrival.Theta, ray.Arrival.Phi);
+					my_ray.SetDeparture(ray.Departure.Theta, ray.Departure.Phi);
+					found = true;
+					break;
+				}
+			}
+			if (!found)
+			{
+				cout << " RAY NOT FOUND " << endl;
+			//	ray.Show();
+			}
+		}
+		*/
 		return true;
 	}
 	void AddTopologyItem(unsigned t_set, unsigned  r_set, unsigned  t_point, unsigned  r_point, unsigned t_element, unsigned r_element)
@@ -278,6 +332,8 @@ public:
 	{
 		size_t i_index{ 0 };
 		Set* SS=new Set();
+		SS->Receivers = this->Receivers;
+		SS->Transmitters = this->Transmitters;
 		if (check != EXPOSURE::ALL )//&& check !=EXPOSURE::NON
 		{
 			for(auto& l : this->S)
@@ -286,6 +342,120 @@ public:
 					SS->AddItem(l);
 			}
 			cout << " Total Number of Points is : " << this->S.size() << " . Number of " << Set_Line::PrintExposure(check) << " Points is " << SS->S.size() << endl;
+		}
+		return *SS;
+	}
+	Set GetPureLOS() // Remove all other rays than the LOS one
+	{
+		size_t i_index{ 0 };
+		Set S_LOS = this->GetEXPO(EXPOSURE::LOS);
+		for (auto& l : S_LOS.S)
+		{
+			for (auto& p : l.Pathes)
+			{
+				if (p.RAYS.size() > 1) //has more than the LOS Ray
+					p.RAYS.resize(1);
+			}
+		}
+		return S_LOS;
+	}
+	Set OmitLOS() // Remove all LOS rays from a LOS points
+	{
+		size_t i_index{ 0 };
+		Set S_LOS = this->GetEXPO(EXPOSURE::LOS);
+		Ray r;
+		size_t LOS_Path_ID{ 1 },Size{0}; //v3_3_31:
+		Set* SS = new Set();
+		SS->Receivers = S_LOS.Receivers;
+		SS->Transmitters = S_LOS.Transmitters;
+		bool Fit{ true };
+		for (auto& l : S_LOS.S)
+		{
+			for (auto& p : l.Pathes)
+			{
+				if (p.RAYS.size() <= 1)
+					Fit = false;
+			}
+			if (Fit)
+			{
+				SS->AddItem(l);
+			}
+		}
+		/*
+		switch (WirelessInsiteFiles::WirelessInsiteVersion)
+		{
+		case v3_0_01:
+			LOS_Path_ID = 0;
+			break;
+		case v3_3_31:
+			LOS_Path_ID = 1;
+			break;
+		default:
+			LOS_Path_ID = 1;
+			break;
+		}
+		*/
+		for (auto& l : SS->S)
+		{
+			for (auto& p : l.Pathes)
+			{
+				if (p.RAYS.size() > 1)
+				{
+					r = p.RAYS.at(0);
+					//make sure it is the LOS ray
+					if (r.Path_ID == LOS_Path_ID)
+					{
+						Size = p.RAYS.size() - 1;
+						r = p.RAYS.at(Size);
+						p.RAYS.resize(Size);
+						p.RAYS.at(0) = r;
+					}
+					else
+						cout << " Something is Wrong !!!" << endl;
+				}
+			}
+		}
+		return *SS;
+	}
+	Set GetNormDelayLOS() // normalize delays of los points to the los component
+	{
+		size_t i_index{ 0 };
+		Set S_NORM_LOS = this->GetEXPO(EXPOSURE::LOS);
+		Set* SS = new Set();
+		double Los_Arrival_Time{ 0 };
+		SS->Receivers = this->Receivers;
+		SS->Transmitters = this->Transmitters;
+		bool found{ true };
+		for (auto& l : S_NORM_LOS.S)
+		{
+			found = true;
+			for (auto& p : l.Pathes)
+			{
+				if (p.RAYS.size() > 1) //has more than the LOS Ray
+				{
+					Los_Arrival_Time = p.RAYS.at(0).Arrival_Time;
+					if (Los_Arrival_Time > 0)
+					{
+						for (auto& r : p.RAYS)
+						{
+							r.Arrival_Time = r.Arrival_Time / Los_Arrival_Time;
+						}
+						found = found * true;
+					}
+					else
+					{
+						cout << " ERROR : ZERO TIME " << endl;
+						found = false;
+					}
+				}
+				else
+					found = false;
+			}
+			if (found)
+			{
+			//	l.Show();
+				SS->AddItem(l);
+			}
 		}
 		return *SS;
 	}
@@ -423,6 +593,7 @@ public:
 		for (auto& l : this->S)
 		{
 			cout << endl;
+			cout << " RX POINT # : " << l.Receiver_Point << endl;
 			for (auto& p : l.Pathes)
 				p.SHOWPATH();
 			cout << endl;
@@ -609,6 +780,8 @@ public:
 	Set* Filter(PROPERITIES p0,double p0_max, double p0_min=0.0, PROPERITIES p1= PROPERITIES::EMPTY_PROP, double p1_max=0.0, double p1_min = 0.0, PROPERITIES p2 = PROPERITIES::EMPTY_PROP,double p2_max = 0.0, double p2_min = 0.0, PROPERITIES p3 = PROPERITIES::EMPTY_PROP, double p3_max = 0.0, double p3_min = 0.0, PROPERITIES p4 = PROPERITIES::EMPTY_PROP, double p4_max = 0.0, double p4_min = 0.0, PROPERITIES p5 = PROPERITIES::EMPTY_PROP, double p5_max = 0.0, double p5_min = 0.0, PROPERITIES p6 = PROPERITIES::EMPTY_PROP, double p6_max = 0.0, double p6_min = 0.0, PROPERITIES p7 = PROPERITIES::EMPTY_PROP, double p7_max = 0.0, double p7_min = 0.0, PROPERITIES p8 = PROPERITIES::EMPTY_PROP, double p8_max = 0.0, double p8_min = 0.0, PROPERITIES p9 = PROPERITIES::EMPTY_PROP, double p9_max = 0.0, double p9_min = 0.0)
 	{
 		Set* pSS = new Set();
+		pSS->Receivers = this->Receivers;
+		pSS->Transmitters = this->Transmitters;
 		for (auto& l : this->S)
 		{
 			if (l.CheckProperity(p0, p0_max, p0_min) && l.CheckProperity(p1, p1_max, p1_min) && l.CheckProperity(p2, p2_max, p2_min) && l.CheckProperity(p3, p3_max, p3_min) && l.CheckProperity(p4, p4_max, p4_min) && l.CheckProperity(p5, p5_max, p5_min) && l.CheckProperity(p6, p6_max, p6_min) && l.CheckProperity(p7, p7_max, p7_min) && l.CheckProperity(p8, p8_max, p8_min) && l.CheckProperity(p9, p9_max, p9_min))

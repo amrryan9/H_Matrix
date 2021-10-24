@@ -8,7 +8,7 @@
 #include"WirelessInsiteFiles.h"
 #include"Ray.h"
 enum class SHOW_HEADER { HEADER_ON, HEADER_OFF };
-enum class PROPERITIES { EMPTY_PROP, TX_SET, RX_SET, TX_POINT, RX_POINT, DIRECT_DISTANCE, RADIAL_DISTANCE, HEIGHT, THETA, PHI, POWER_dBm };
+enum class PROPERITIES { EMPTY_PROP, TX_SET, RX_SET, TX_POINT, RX_POINT, DIRECT_DISTANCE, RADIAL_DISTANCE, HEIGHT, THETA, PHI, POWER_dBm, MEAN_ARRIVAL_TIME};
 using namespace std;
 
 struct POSITION {
@@ -163,6 +163,97 @@ struct PATHS
 		else
 			return false;
 	}
+	
+	UnitVectors DirectionUnitVectors() // Mean arrrival and departure directin unit vectors
+	{
+		size_t N = RAYS.size();
+		valarray<float> Arrival_phi(N);
+		valarray<float> Arrival_theta(N);
+		valarray<float> Departure_phi(N);
+		valarray<float> Departure_theta(N);
+		valarray<float> Delay(N);
+		size_t i{ 0 };
+		for (auto& p : RAYS)
+		{
+			Arrival_phi[i] = p.Arrival.Phi;
+			Arrival_theta[i] = p.Arrival.Theta;
+			Departure_phi[i]= p.Departure.Phi;
+			Departure_theta[i] = p.Departure.Theta;
+			Delay[i] = p.Arrival_Time;
+			i++;
+		}
+		float mean_Arrival_phi = Arrival_phi.sum() / N;
+		float mean_Arrival_theta = Arrival_theta.sum() / N;
+		float mean_Departure_phi = Departure_phi.sum() / N;
+		float mean_Departure_theta = Departure_theta.sum() / N;
+		
+		UnitVectors a_v;
+		a_v.Arrival_UV[0] = cos(mean_Arrival_phi) * sin(mean_Arrival_theta);
+		a_v.Arrival_UV[1] = sin(mean_Arrival_phi) * sin(mean_Arrival_theta);
+		a_v.Arrival_UV[2] =                         cos(mean_Arrival_theta);
+
+		a_v.Departure_UV[0] = cos(mean_Departure_phi) * sin(mean_Departure_theta);
+		a_v.Departure_UV[1] = sin(mean_Departure_phi) * sin(mean_Departure_theta);
+		a_v.Departure_UV[2] = cos(mean_Departure_theta);
+
+		a_v.Delay = Delay.sum() / N;
+	}
+	DirectionStatistics Statistics()
+	{
+		DirectionStatistics stat;
+		size_t N = RAYS.size();
+		valarray<float> Arrival_phi(N);
+		valarray<float> Arrival_theta(N);
+		valarray<float> Departure_phi(N);
+		valarray<float> Departure_theta(N);
+		valarray<float> Delay(N);
+		size_t i{ 0 };
+		for (auto& p : RAYS)
+		{
+			Arrival_phi[i] = p.Arrival.Phi;
+			Arrival_theta[i] = p.Arrival.Theta;
+			Departure_phi[i] = p.Departure.Phi;
+			Departure_theta[i] = p.Departure.Theta;
+			Delay[i] = p.Arrival_Time;
+			if (Delay[i] < 0)
+			{
+				cout << " at i :" << i << "\t" << Delay[i] << endl;
+				cout << p.Arrival_Time << endl;
+				p.Show();
+			}
+			i++;
+		}
+		float mean_Arrival_phi = 0;
+		float mean_Arrival_theta = 0;
+		float mean_Departure_phi = 0;
+		float mean_Departure_theta = 0;
+		float mean_Delay = 0.0;
+		if (N > 0)
+		{
+			mean_Arrival_phi = Arrival_phi.sum() / static_cast<float>(N);
+			mean_Arrival_theta = Arrival_theta.sum() / static_cast<float>(N);
+			mean_Departure_phi = Departure_phi.sum() / static_cast<float>(N);
+			mean_Departure_theta = Departure_theta.sum() / static_cast<float>(N);
+			mean_Delay = Delay.sum() / static_cast<float>(N); if(mean_Delay<0)cout <<" Mean Delay:"<< mean_Delay << endl;
+			stat.Arrival_AngularSpread.Phi = Arrival_phi.max() - Arrival_phi.min();
+			stat.Arrival_AngularSpread.Theta = Arrival_theta.max() - Arrival_theta.min();
+			stat.Departure_AngularSpread.Phi = Departure_phi.max() - Departure_phi.min();
+			stat.Departure_AngularSpread.Theta = Departure_theta.max() - Departure_theta.min();
+			stat.Arrival_Mean.Phi = mean_Arrival_phi;
+			stat.Arrival_Mean.Theta = mean_Arrival_theta;
+			stat.Departure_Mean.Phi = mean_Departure_phi;
+			stat.Departure_Mean.Theta = mean_Departure_theta;
+			stat.Arrival_Std.Phi = Tools::Std(Arrival_phi);
+			stat.Arrival_Std.Theta = Tools::Std(Arrival_theta);
+			stat.Departure_Std.Phi = Tools::Std(Departure_phi);
+			stat.Departure_Std.Theta = Tools::Std(Departure_theta);
+			// add the std if needed
+			stat.Delay_Mean = mean_Delay;
+		}
+
+		
+		return stat;
+	}
 	bool write(std::ofstream& ofile)
 	{
 		bool flag{ true };
@@ -201,6 +292,7 @@ struct PATHS
 		ifile.read(reinterpret_cast<char*>(&EXPO), sizeof(EXPOSURE));
 		return flag *!ifile.fail();
 	}
+
 	unsigned TX_ELEMENT;
 	unsigned RX_ELEMENT;
 	std::string KEY;
@@ -274,6 +366,16 @@ public:
 						P.SETKEY(key);
 						this->Pathes.push_back(P);
 					}
+	}
+	double Mean_Arrival_Time_All_elements()
+	{
+		double sum{ 0.0 };
+		for (auto& p : this->Pathes)
+			sum=sum+p.Statistics().Delay_Mean;
+		if (this->Pathes.size() > 1)
+			return sum / static_cast<double>(this->Pathes.size());
+		else
+			return sum;
 	}
 	PATHS& GetPathes(unsigned tx_ele, unsigned rx_ele)
 	{
@@ -407,7 +509,7 @@ public:
 		std::cout << " DIRECT DISTANCE  : " << this->DirectDistance << endl;
 		std::cout << " ELEVATION ANGLE  : " << this->ElevationAngle<< endl;
 		this->RxPosition.Show();
-		std::cout << " H                : " << this->ElevationAngle << endl;
+		std::cout << " H                : "<< endl;
 		this->M.Show(RECT);
 		cout << "    _______________________________ END LINK ___________________________" << endl;
 	}
@@ -492,6 +594,11 @@ public:
 			break;
 		case PROPERITIES::POWER_dBm:
 			if (static_cast<double>(max) >= this->Power.GetPower_dBm() && static_cast<double>(min) <= this->Power.GetPower_dBm())return true;
+			else
+				return false;
+			break;
+		case PROPERITIES::MEAN_ARRIVAL_TIME:
+			if (static_cast<double>(max) >= this->Mean_Arrival_Time_All_elements() && static_cast<double>(min) <= this->Mean_Arrival_Time_All_elements())return true;
 			else
 				return false;
 			break;

@@ -214,18 +214,24 @@ public:
 					{
 						for (auto& s : MIMO_H_MATRIX.S)
 						{
-							//	p=Permutate(i_terminal, SetSize);
-							p = i_terminal;
+							p=Permutate(i_terminal, SetSize);
+						//	p = i_terminal;
 							// Adding RxPosition to Set_Line ///////////////////////////////////////
 							s.RxPosition.Distance = Terminal_data_set.at(p).Distance;
 							s.RxPosition.Height = Terminal_data_set.at(p).Height;
 							s.RxPosition.Theta = Terminal_data_set.at(p).Theta;
 							s.RxPosition.Phi = Terminal_data_set.at(p).Phi;
 							s.RxPosition.R = Terminal_data_set.at(p).R;
+							s.RxPosition.X = s.RxPosition.R * cos(s.RxPosition.Phi);
+							s.RxPosition.Y = s.RxPosition.R * sin(s.RxPosition.Phi);
+							s.RxPosition.Z = s.RxPosition.Distance * cos(s.RxPosition.Theta);
 							s.TxPosition.Z = 500; // For testing
+							s.TxPosition.X = 0; // For testing
+							s.TxPosition.Y = 0; // For testing
 							s.DirectDistance = sqrt(pow(s.TxPosition.X - s.RxPosition.X, 2) + pow(s.TxPosition.Y - s.RxPosition.Y, 2) + pow(s.TxPosition.Z - s.RxPosition.Z, 2));
-							s.ElevationAngle = asin((s.TxPosition.Z - s.RxPosition.Z) / s.DirectDistance);// The Elevation angle magnitude is < 90 Degres, when it is positive the transmitter is higher , when negative , the transmitter is lower than the receiver
-							if (s.ElevationAngle > (22.0 / 7.0))s.ElevationAngle = s.ElevationAngle - (44.0 / 7.0);
+							s.ElevationAngle = asin(abs(s.TxPosition.Z - s.RxPosition.Z) / s.DirectDistance);// The Elevation angle magnitude is < 90 Degres, when it is positive the transmitter is higher , when negative , the transmitter is lower than the receiver
+							//while (s.ElevationAngle > (22.0 / 7.0))s.ElevationAngle = s.ElevationAngle- (44.0 / 7.0); s.ElevationAngle = abs(s.ElevationAngle);
+
 							//////////////////////////////////////////////////////////////////////
 							i_terminal++;
 						}
@@ -279,8 +285,8 @@ public:
 				s.RxPosition.Z = location_pointer_rx->Z;
 				/////////////////////////////////////////////////////////////////////
 				s.DirectDistance = sqrt(pow(s.TxPosition.X-s.RxPosition.X, 2) + pow(s.TxPosition.Y - s.RxPosition.Y, 2) + pow(s.TxPosition.Z - s.RxPosition.Z, 2)); cout << " Direct Distance :" << s.DirectDistance << endl;
-				s.ElevationAngle = asin((s.TxPosition.Z - s.RxPosition.Z) / s.DirectDistance);// The Elevation angle magnitude is < 90 Degres, when it is positive the transmitter is higher , when negative , the transmitter is lower than the receiver
-				if (s.ElevationAngle > (22.0 / 7.0))s.ElevationAngle = s.ElevationAngle - (44.0 / 7.0);
+				s.ElevationAngle = asin(abs(s.TxPosition.Z - s.RxPosition.Z) / s.DirectDistance);// The Elevation angle magnitude is < 90 Degres, when it is positive the transmitter is higher , when negative , the transmitter is lower than the receiver
+				//while (s.ElevationAngle > (22.0 / 7.0))s.ElevationAngle = s.ElevationAngle-(44.0 / 7.0); s.ElevationAngle = abs(s.ElevationAngle);
 
 			}
 		//	i_terminal++;
@@ -361,8 +367,19 @@ public:
 			DEPARTURE_THETA= ITEM.at(3).VALUE;
 			break;
 		}
-		Ray r(PATH_ID, SOURCE_ID, POWER, PHASE, ARRIVAL_TIME, ARRIVAL_PHI, ARRIVAL_THETA, DEPARTURE_PHI, DEPARTURE_THETA);
-		pathes.push_back(r);
+	//	if (ARRIVAL_TIME >= 0.0)
+	//	{
+			Ray r(PATH_ID, SOURCE_ID, POWER, PHASE, ARRIVAL_TIME, ARRIVAL_PHI, ARRIVAL_THETA, DEPARTURE_PHI, DEPARTURE_THETA);
+			pathes.push_back(r);
+	//	}
+	//	else
+	//	{
+		//	cout << " ERROR RAY : " << endl;
+	//		Ray r(PATH_ID, SOURCE_ID, POWER, PHASE, ARRIVAL_TIME, ARRIVAL_PHI, ARRIVAL_THETA, DEPARTURE_PHI, DEPARTURE_THETA);
+	//		pathes.push_back(r);// Added Also here , to be rejected at "Set::updateItem()"
+		//	r.Show();
+	//	}
+		
 	}
 	//////////////////////////////////////////////////////////
 	void ReadDirection(std::string path_folder, TRANSMITTER_POWER&  transmitter_power_watt, Set& MIMO_H_MATRIX, FILES FILE_TYPE)

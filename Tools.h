@@ -408,8 +408,8 @@ public:
 				joint = "+j";
 			break;
 		case POLAR:
-			a = std::abs(n);
-			b = std::arg(n);
+			a = Tools::Round2(std::abs(n), d);
+			b = Tools::Round2(std::arg(n), d);
 			joint = "|_ ";
 			break;
 		}
@@ -501,6 +501,25 @@ public:
 		std::copy(std::begin(row), std::end(row), out_iter2);
 		out_iter2 = "\n";
 		return true;
+	}
+	static float Std(valarray<float> x)
+	{
+		size_t N=x.size();
+		valarray<float> y;
+		float mu{ 0 };
+		if (N > 1)
+		{
+			y.resize(N);
+			mu = x.sum() / static_cast<float>(N);
+			size_t j{ 0 };
+			for (auto& i : x)
+			{
+				y[j] = pow(abs(i - mu), 2);
+				j++;
+			}
+			return sqrt((1.0 / static_cast<float>(N - 1)) * y.sum());
+		}
+		return 0;
 	}
 	public:
 		

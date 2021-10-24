@@ -22,8 +22,34 @@ struct Direction
 		Theta = t;
 		Phi = p;
 	}
+	valarray<float> UnitVector()
+	{
+		valarray<float> UV(3);
+		UV[0] = cos(Phi) * sin(Theta);
+		UV[1] = sin(Phi) * sin(Theta);
+		UV[2] = cos(Theta);
+		return UV;
+	}
 	double Theta;
 	double Phi;
+};
+struct DirectionStatistics
+{
+	DirectionStatistics() {  }
+	Direction Arrival_Mean;
+	Direction Departure_Mean;
+	Direction Arrival_Std;
+	Direction Departure_Std;
+	Direction Arrival_AngularSpread;
+	Direction Departure_AngularSpread;
+	float Delay_Mean;
+};
+struct UnitVectors
+{
+	UnitVectors() {};
+	valarray<float> Arrival_UV;
+	valarray<float> Departure_UV;
+	float Delay;
 };
 class Ray
 {
@@ -183,6 +209,22 @@ public:
 		Phase = 0; // Phase Angle in rad
 		Arrival_Time = 0; // Time in seconds
 		Voltage_Value = complex<double>(0.0,0.0);
+	}
+	Float_matrix ArrivalRayDirectionVector()
+	{
+		Float_matrix d;
+		d.AddItem(0, 0, cos(this->Arrival.Phi) * sin(this->Arrival.Theta));
+		d.AddItem(0, 1, sin(this->Arrival.Phi) * sin(this->Arrival.Theta));
+		d.AddItem(0, 2,                          cos(this->Arrival.Theta));
+		return d;
+	}
+	Float_matrix DepartureRayDirectionVector()
+	{
+		Float_matrix d;
+		d.AddItem(0, 0, cos(this->Departure.Phi) * sin(this->Departure.Theta));
+		d.AddItem(0, 1, sin(this->Departure.Phi) * sin(this->Departure.Theta));
+		d.AddItem(0, 2,                            cos(this->Departure.Theta));
+		return d;
 	}
 	void Show() const
 	{
