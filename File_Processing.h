@@ -202,7 +202,7 @@ public:
 		return MIMO_H_MATRIX;
 	}
 	//////////////////////////////////////////////////////////
-	void SetPointsPositions(Set& MIMO_H_MATRIX, std::vector<Terminal>& Terminal_data_set)
+	void SetPointsPositions(Set& MIMO_H_MATRIX, std::vector<Terminal>& Terminal_data_set, unsigned version=0)
 	{
 		size_t p = 0;
 		size_t i_terminal = 0;
@@ -216,23 +216,48 @@ public:
 						{
 							p=Permutate(i_terminal, SetSize);
 						//	p = i_terminal;
-							// Adding RxPosition to Set_Line ///////////////////////////////////////
-							s.RxPosition.Distance = Terminal_data_set.at(p).Distance;
-							s.RxPosition.Height = Terminal_data_set.at(p).Height;
-							s.RxPosition.Theta = Terminal_data_set.at(p).Theta;
-							s.RxPosition.Phi = Terminal_data_set.at(p).Phi;
-							s.RxPosition.R = Terminal_data_set.at(p).R;
-							s.RxPosition.X = s.RxPosition.R * cos(s.RxPosition.Phi);
-							s.RxPosition.Y = s.RxPosition.R * sin(s.RxPosition.Phi);
-							s.RxPosition.Z = s.RxPosition.Distance * cos(s.RxPosition.Theta);
-							s.TxPosition.Z = 500; // For testing
-							s.TxPosition.X = 0; // For testing
-							s.TxPosition.Y = 0; // For testing
-							s.DirectDistance = sqrt(pow(s.TxPosition.X - s.RxPosition.X, 2) + pow(s.TxPosition.Y - s.RxPosition.Y, 2) + pow(s.TxPosition.Z - s.RxPosition.Z, 2));
-							s.ElevationAngle = asin(abs(s.TxPosition.Z - s.RxPosition.Z) / s.DirectDistance);// The Elevation angle magnitude is < 90 Degres, when it is positive the transmitter is higher , when negative , the transmitter is lower than the receiver
-							//while (s.ElevationAngle > (22.0 / 7.0))s.ElevationAngle = s.ElevationAngle- (44.0 / 7.0); s.ElevationAngle = abs(s.ElevationAngle);
-
-							//////////////////////////////////////////////////////////////////////
+							if (version == FULL)
+							{
+								//////////////////////// UNIVERSAL /////////////////////////////////
+								s.RxPosition.Distance = Terminal_data_set.at(p).Distance;//universal
+								s.RxPosition.Height = Terminal_data_set.at(p).Height;
+								s.RxPosition.Theta = Terminal_data_set.at(p).Theta;//universal
+								s.RxPosition.Phi = Terminal_data_set.at(p).Phi;//universal
+								s.RxPosition.R = Terminal_data_set.at(p).R;//universal
+								s.RxPosition.X = Terminal_data_set.at(p).X;//universal
+								s.RxPosition.Y = Terminal_data_set.at(p).Y;//universal
+								s.RxPosition.Z = Terminal_data_set.at(p).Z;//universal
+								s.TxPosition.Z = 120; // For testing
+								s.TxPosition.X = 0; // For testing
+								s.TxPosition.Y = 0; // For testing
+								////////////////////////// RELATIVE /////////////////////////////////
+								s.RadialDistance = Terminal_data_set.at(p).RadialDistance;
+								s.DirectDistance = Terminal_data_set.at(p).DirectDistance;
+								s.ElevationAngle = Terminal_data_set.at(p).ElevationAngle;
+								s.AzimuthAngle = Terminal_data_set.at(p).AzimuthAngle;// sign is preserved
+								//////////////////////////////////////////////////////////////////////
+							}
+							else
+							{
+								// Adding RxPosition to Set_Line ///////////////////////////////////////
+								s.RxPosition.Distance = Terminal_data_set.at(p).Distance;//universal
+								s.RxPosition.Height = Terminal_data_set.at(p).Height;
+								s.RxPosition.Theta = Terminal_data_set.at(p).Theta;//universal
+								s.RxPosition.Phi = Terminal_data_set.at(p).Phi;//universal
+								s.RxPosition.R = Terminal_data_set.at(p).R;//universal
+								s.RxPosition.X = s.RxPosition.Distance * sin(s.RxPosition.Theta) * cos(s.RxPosition.Phi);//s.RxPosition.R//universal
+								s.RxPosition.Y = s.RxPosition.Distance * sin(s.RxPosition.Theta) * sin(s.RxPosition.Phi);//s.RxPosition.R//universal
+								s.RxPosition.Z = s.RxPosition.Distance * cos(s.RxPosition.Theta);//universal
+								s.TxPosition.Z = 120; // For testing
+								s.TxPosition.X = 0; // For testing
+								s.TxPosition.Y = 0; // For testing
+								////////////////////////// RELATIVE /////////////////////////////////
+								s.RadialDistance = sqrt(pow(s.TxPosition.X - s.RxPosition.X, 2) + pow(s.TxPosition.Y - s.RxPosition.Y, 2));
+								s.DirectDistance = sqrt(pow(s.TxPosition.X - s.RxPosition.X, 2) + pow(s.TxPosition.Y - s.RxPosition.Y, 2) + pow(s.TxPosition.Z - s.RxPosition.Z, 2));
+								s.ElevationAngle = asin(abs(s.TxPosition.Z - s.RxPosition.Z) / s.DirectDistance);// The Elevation angle magnitude is < 90 Degres, when it is positive the transmitter is higher , when negative , the transmitter is lower than the receiver
+								s.AzimuthAngle = acos((s.RxPosition.X - s.TxPosition.X) / s.RadialDistance);// sign is preserved
+								//////////////////////////////////////////////////////////////////////
+							}
 							i_terminal++;
 						}
 						cout << " OK !!!" << endl;

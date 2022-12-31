@@ -1,6 +1,57 @@
 #pragma once
 #include"Set.h"
+struct VERTIX {
+	VERTIX()
+	{
+		x = 0;
+		y = 0;
+		z = 0;
+		theta = 0;
+		phi = 0;
+		r = 0;
+	}
+	VERTIX(float x1, float y1, float z1)
+	{
+		x = x1;
+		y = y1;
+		z = z1;
+		theta = 0;// For now
+		phi = 0;
+		r = 0;
+		elevation=0;
+		azimuth=0;
+	//	ref_z=0;
+	}
+	VERTIX(float x1, float y1, float z1,float elev, float az)
+	{
+		x = x1;
+		y = y1;
+		z = z1;
+		theta = 0;// For now
+		phi = 0;
+		r = 0;
 
+		elevation = elev;
+		azimuth = az;
+	}
+	void SHOW()
+	{
+		cout << " VERTIX : " << endl;
+		cout <<x << "\t";
+		cout <<y << "\t";
+		cout <<z << endl;
+		cout << endl;
+	}
+	float x;
+	float y;
+	float z;
+	float theta;
+	float phi;
+	float r;
+	float elevation;
+	float azimuth;
+//	float ref_z;
+};
 struct ULA {
 	ULA()
 	{
@@ -17,10 +68,21 @@ struct ULA {
 		Unit_Vector[1] = sin(phi) * sin(theta);
 		Unit_Vector[2] = cos(theta);
 	}
+	valarray<VERTIX> GetCorrdinates(VERTIX Edge_corrdinate=VERTIX(0.0f,0.0f,0.0f))// return cartizian coordinates of eat elemet in the array, given the edge of the array corrdinate., the edge has no element
+	{
+		valarray<VERTIX> coordinates;
+		coordinates.resize(NumberOfElements);
+		for (size_t i = 0; i < NumberOfElements; i++)
+		{
+			coordinates[i] = VERTIX((Unit_Vector[0] * Spacing * (i + 1)) + Edge_corrdinate.x, (Unit_Vector[1] * Spacing * (i + 1)) + Edge_corrdinate.y, (Unit_Vector[2] * Spacing * (i + 1)) + Edge_corrdinate.z);
+		}
+		return coordinates;
+	}
 	size_t NumberOfElements;
 	float Spacing;
 	Direction Line_Direction;
 	valarray<float> Unit_Vector;
+	
 };
 struct UPA {
 	UPA(size_t n1, size_t n2, float s, float phi1, float phi2, float theta1, float theta2)
@@ -35,6 +97,7 @@ class Application
 {
 public:
 	Application() {};
+	
 	static valarray<ComplexF> Steering(PATHS& p, ULA ula_R,ULA ula_T, float frequency) // for each item // Assumed the same ULA, or UPA at the transmitter and the receiver
 	{
 		valarray<ComplexF> Alpha_Delay(p.RAYS.size());
@@ -64,7 +127,7 @@ public:
 			{
 				Rx[i] = std::polar<float>(1, i * Theta_R);
 			}
-			Path_Delay = std::polar<float>(1.0, (-44.0 / 7) * static_cast<float>(n.Arrival_Time) * frequency);
+			Path_Delay = 1.0; ///  std::polar<float>(1.0, (-44.0 / 7) * static_cast<float>(n.Arrival_Time) * frequency); // time delay spread is not included
 			Alpha_Delay[i_n] = (Rx * Conjugate<float>(Tx)).sum() * Path_Delay;
 			i_n++;
 		}
@@ -129,7 +192,7 @@ public:
 			}
 			Rx = Kronecker<ComplexF>(Rx1, Rx2);
 			Tx = Kronecker<ComplexF>(Tx1, Tx2);
-			Path_Delay = std::polar<float>(1.0, (-44.0 / 7) * static_cast<float>(n.Arrival_Time) * frequency);
+			Path_Delay = 1.0;// std::polar<float>(1.0, (-44.0 / 7) * static_cast<float>(n.Arrival_Time) * frequency);
 			Alpha_Delay[i_n]=(Rx * Conjugate<float>(Tx)).sum() * Path_Delay;
 			i_n++;
 		}
@@ -199,12 +262,15 @@ public:
 				Output.AddItem(line, 10 + shift, stat.Arrival_Std.Theta);
 				Output.AddItem(line, 11 + shift, stat.Departure_Std.Phi);
 				Output.AddItem(line, 12 + shift, stat.Departure_Std.Theta);
-				Output.AddItem(line, 13 + shift, l.DirectDistance);
-				Output.AddItem(line, 14 + shift, l.ElevationAngle*180*7.0/22.0);
-				Output.AddItem(line, 15 + shift, l.RxPosition.Height);
-				Output.AddItem(line, 16 + shift, l.RxPosition.Phi);
-				Output.AddItem(line, 17 + shift, l.RxPosition.Theta);
+				Output.AddItem(line, 13 + shift, l.DirectDistance); //  relative positions 
+				Output.AddItem(line, 14 + shift, l.ElevationAngle*180*7.0/22.0);//  relative positions 
+				Output.AddItem(line, 15 + shift, l.AzimuthAngle * 180 * 7.0 / 22.0);//  relative positions 
+				Output.AddItem(line, 16 + shift, l.RxPosition.Phi);// universal
+				Output.AddItem(line, 17 + shift, l.RxPosition.Theta);// universal
 				Output.AddItem(line, 18 + shift, l.RxPosition.R);  // Add More ( X Y Z) when needed
+				Output.AddItem(line, 19 + shift, l.RxPosition.X);
+				Output.AddItem(line, 20 + shift, l.RxPosition.Y);
+				Output.AddItem(line, 21 + shift, l.RxPosition.Z);
 
 				line++;
 			}
@@ -216,7 +282,7 @@ public:
 		Data.AddItem(0, 3, N); 
 		Data.AddItem(0, 4, static_cast<double>(frequency));
 		Data.Show();
-	//	Output.Show();
+		Output.Show();
 		Data.WriteFile_NonComplex(data_file);
 		Output.WriteFile_NonComplex(output_file);
 

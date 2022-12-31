@@ -7,6 +7,12 @@
 #include <vector>
 #include <array>
 #include <matrix.h>
+#include <random>
+#include <algorithm>
+#include <functional>
+#include <cmath>
+#include <cerrno>
+#include <cfenv>
 
 using namespace std;
 
@@ -54,6 +60,104 @@ struct FILE_COLUMN
 		VALUE;
 };
 
+struct FileReader
+{
+	size_t Limit;
+	std::vector <std::string>* buffer;
+	std::streampos position;
+	std::string File_To_Read;
+	int Line_Pointer;//Where is in the block now
+	int File_Line_Pointer;// Where is in the file now
+	size_t edge;//upto the previous buffer
+	FileReader(std::string file_full_path,  size_t limit = 1000)
+	{
+		File_To_Read=file_full_path ;
+		Limit = limit;
+		position = static_cast<streampos>(0);
+		buffer = nullptr;
+		Line_Pointer = -1;
+		File_Line_Pointer = 0;
+		edge = 0;
+	}
+	size_t ReadSection()
+	{
+		std::ifstream in_file{ File_To_Read };
+		if (!in_file)
+		{
+			cout << " file is not open." << std::endl;
+			std::cerr << " file is not open." << std::endl;
+			exit(1);
+		}
+		if (buffer != nullptr)
+		{
+			edge = edge + buffer->size();// collect the previous buffer size
+			delete buffer;
+		}
+		buffer = new std::vector <std::string>();
+		in_file.seekg(position); 
+		std::string line{};
+		for (size_t i = 0; i < Limit; i++) {
+			if (getline(in_file, line, '\n'))
+			{
+				
+				std::istringstream input2;
+				input2.str(line);
+				for (std::string line_section; std::getline(input2, line_section, ' '); ) {
+					line_section.erase(std::remove(line_section.begin(), line_section.end(), '\t'), line_section.end());
+					buffer->push_back(line_section);
+				}
+			}
+		}
+		position = in_file.tellg();
+		in_file.close();
+		if (buffer->size() == 0)
+		{
+		//	cout << "End of File reached" << endl;
+			File_Line_Pointer = -1;
+			delete buffer;
+
+		}
+		return buffer->size();
+	}
+	std::string GetLine()
+	{
+		if ((Line_Pointer == -1)&& File_Line_Pointer != -1) //Line_Pointer >= Limit || 
+		{
+			if (ReadSection() > 0)
+			{
+				Line_Pointer = 0;//reset the package pointer
+			}
+		}
+		
+		File_Line_Pointer++;
+		if ((Line_Pointer) < buffer->size()-1)
+		{
+			Line_Pointer++;
+			return buffer->at(Line_Pointer - 1);
+		}
+		else
+		{
+			Line_Pointer = -1;
+			return buffer->at(buffer->size() - 1);
+		}
+		
+	}
+	bool GetLine(int line_number, std::string& line)
+	{
+		line.clear();
+		while ((line_number > File_Line_Pointer  || File_Line_Pointer==0 || (File_Line_Pointer-edge >= buffer->size())) && File_Line_Pointer != -1)
+		{
+			GetLine();
+		}
+		if (line_number <= File_Line_Pointer && (line_number-edge) <= (File_Line_Pointer - edge) && File_Line_Pointer != -1)
+		{
+			line= buffer->at(line_number -edge);
+			return true;
+		}
+		return false;
+
+	}
+};
 class Tools
 {
 public:
@@ -232,7 +336,7 @@ public:
 			return 0.0;
 		}
 	}
-	static std::string ConvertToString(unsigned x)
+	static std::string ConvertToString(int x)
 	{
 		std::string result{ "" };
 		int y = x; int z{ 0 };
@@ -256,6 +360,13 @@ public:
 			}
 			return result;
 		}
+	}
+	static std::string ConvertToString(float x, unsigned dicimal_digits)
+	{
+		int P1 = int(x);
+		int P2 = static_cast<int>((x - static_cast<float>(P1))*10*dicimal_digits);
+		return ConvertToString(P1) + "." + ConvertToString(P2);
+
 	}
 	static void WriteDoubleVectorToFile(std::string file_out, std::vector<double> data)
 	{
@@ -479,6 +590,29 @@ public:
 		std::vector<string> file_contents{ std::istream_iterator<string>(in_file),std::istream_iterator<string>() };
 		return file_contents;
 	}
+	static FileReader* Read_ssv_LargeFile(string file_full_path)// // Space Separated File
+	{
+		std::string file_full_path_copy{ file_full_path };
+		std::string file_name, parent_folder;
+		if (file_full_path.find('/') == -1)
+			if (file_full_path.find('\\') == -1)
+			{
+				file_name = file_full_path;
+				parent_folder = "./";
+			}
+			else
+			{
+				file_name = file_full_path_copy.substr(file_full_path.find_last_of('\\') + 1);;
+				parent_folder = file_full_path_copy.replace(file_full_path.find_last_of('\\'), file_name.size() + 1, "");;
+			}
+		else
+		{
+			file_name = file_full_path_copy.substr(file_full_path.find_last_of('/') + 1);;
+			parent_folder = file_full_path_copy.replace(file_full_path.find_last_of('/'), file_name.size() + 1, "");;
+		}
+		FileReader* READER=new FileReader(file_full_path);
+		return READER;
+	}
 	static bool Wirte_ssv_File(string file_full_path, std::vector<string>& row)// // Space Separated File
 	{
 		std::string parent_directory = file_full_path;
@@ -496,12 +630,13 @@ public:
 			}
 		}
 		std::ofstream out{ file_full_path , std::ios_base::out | std::ios_base::trunc };//+ extension
-		std::ostream_iterator<string> out_iter2{ out, " " };
+		std::ostream_iterator<string> out_iter2{ out};//, " " 
 
 		std::copy(std::begin(row), std::end(row), out_iter2);
 		out_iter2 = "\n";
 		return true;
 	}
+
 	static float Std(valarray<float> x)
 	{
 		size_t N=x.size();

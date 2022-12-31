@@ -116,6 +116,20 @@ public:
 		Departure.Theta = departure_theta;
 		Departure.Phi = departure_phi;
 	}
+	Ray(unsigned path_id,unsigned source_id, unsigned total_interactions, double power, double phase, double arrival_time, float arrival_theta, float arrival_phi, float departure_theta, float departure_phi)
+	{
+		Path_ID = path_id;//MIMO From SISO
+		Source_ID = source_id;
+		Interactions = total_interactions;
+		Power = power; // Power magnitude in Watts
+		Phase = phase; // Phase Angle in rad of the voltage value , NOT power
+		Arrival_Time = arrival_time; // Time in seconds
+		Voltage_Value = complex(sqrt(power) * cos(phase), sqrt(power) * sin(phase));
+		Arrival.Theta = arrival_theta;
+		Arrival.Phi = arrival_phi;
+		Departure.Theta = departure_theta;
+		Departure.Phi = departure_phi;
+	}
 	Ray(unsigned path_id, unsigned source_id, double power, double phase, double arrival_time, double Arrival_Phi, double Arrival_Theta, double Departure_Phi, double Departure_Theta)
 	{
 		Path_ID = path_id;

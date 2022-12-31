@@ -276,11 +276,13 @@ public:
 		cout << " PATHES ARE NOT FOUND !!!!!!!!!!" << endl;
 		return Nothing;
 	}
-	void SetExposure()
+	void SetExposure() // Also set DElay Spread and the K factor 
 	{
 		for (auto& s : this->S)
 		{
 			s.SetExposure();
+			s.SetKFactor();
+			s.SetDelaySpread();
 		}
 	}
 	Set GetEXPO(EXPOSURE check)
@@ -372,12 +374,13 @@ public:
 		}
 		return *SS;
 	}
-	Set GetNormDelayLOS() // normalize delays of los points to the los component
+	Set GetNormDelayLOS() // normalize delays of los points to the los component and sets the K factor for each element in a point
 	{
 		size_t i_index{ 0 };
 		Set S_NORM_LOS = this->GetEXPO(EXPOSURE::LOS);
 		Set* SS = new Set();
 		double Los_Arrival_Time{ 0 };
+		double Los_Power{ 0 };
 		SS->Receivers = this->Receivers;
 		SS->Transmitters = this->Transmitters;
 		bool found{ true };
@@ -389,6 +392,7 @@ public:
 				if (p.RAYS.size() > 1) //has more than the LOS Ray
 				{
 					Los_Arrival_Time = p.RAYS.at(0).Arrival_Time;
+					Los_Power = p.RAYS.at(0).Power;
 					if (Los_Arrival_Time > 0)
 					{
 						for (auto& r : p.RAYS)
@@ -414,6 +418,7 @@ public:
 		}
 		return *SS;
 	}
+	
 	Set RemoveLines(std::vector<size_t> remove_points)
 	{
 		Set SS;

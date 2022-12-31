@@ -90,6 +90,8 @@ struct PATHS
 		RX_ELEMENT = 0;
 		KEY = "";
 		EXPO = NLOS;
+		DELAY_SPREAD = 0.0;
+		K_FACTOR = 0.0;
 	}
 	PATHS(unsigned tx_ele,unsigned rx_ele)
 	{
@@ -97,6 +99,8 @@ struct PATHS
 		RX_ELEMENT= rx_ele;
 		KEY = "";
 		EXPO = NLOS;
+		DELAY_SPREAD = 0.0;
+		K_FACTOR = 0.0;
 	}
 	void SHOW()
 	{
@@ -114,7 +118,9 @@ struct PATHS
 			cout << " ARRIVAL PHI(RAD)		:" << r.Arrival.Phi << setw(20);
 			cout << " ARRIVAL THETA(RAD)	:" << r.Arrival.Theta << setw(20);
 			cout << " DEPARTURE PHI(RAD)	:" << r.Departure.Phi << setw(20);
-			cout << " DEPARTURE THETA(RAD)	:" << r.Departure.Theta << endl;
+			cout << " DEPARTURE THETA(RAD)	:" << r.Departure.Theta << setw(20);
+			cout << " DEALY SPREAD(S)	    :" << DELAY_SPREAD<< endl;
+			cout << " K FACTOR	            :" << K_FACTOR << endl;
 		}
 		cout << " *************************** " << endl;
 	}
@@ -126,7 +132,8 @@ struct PATHS
 		cout << " RX_ELEMENT : " << RX_ELEMENT << endl;
 		cout << " SPACING    : " << Environment::Spacing << endl;
 		cout << " Array AZIMUTH ANGLE : " << Environment::Phi_array << endl;
-
+		cout << " DEALY SPREAD(S)	  :" << DELAY_SPREAD << endl;
+		cout << " K FACTOR	          :" << K_FACTOR << endl;
 
 		cout << " PATH ID" << setw(20);
 		cout << " SOURCE ID" << setw(20);
@@ -163,7 +170,29 @@ struct PATHS
 		else
 			return false;
 	}
-	
+	void SETDELAYSPREAD()
+	{
+		double PR{ 0 }, PT{ 0 }, TM{ 0.0 }, TI{ 0.0 };//total power in paths without phase info
+		for (auto& r : RAYS)
+		{
+			PR = PR + r.Power;
+			PT = PT + (r.Power * r.Arrival_Time);
+		}
+		if (PR > 0)
+		{
+			TM = PT / PR;
+			for (auto& r : RAYS)
+			{
+				TI = TI + (pow(r.Arrival_Time - TM, 2) * r.Power);
+			}
+			if ((TI / PR) < 0)
+				cout << " ERROR in POWER VALUE - NEGATIVE " << endl;
+			else
+				DELAY_SPREAD = sqrt(TI / PR);
+		}
+		else
+			DELAY_SPREAD = 0.0;
+	}
 	UnitVectors DirectionUnitVectors() // Mean arrrival and departure directin unit vectors
 	{
 		size_t N = RAYS.size();
@@ -247,10 +276,10 @@ struct PATHS
 			stat.Arrival_Std.Theta = Tools::Std(Arrival_theta);
 			stat.Departure_Std.Phi = Tools::Std(Departure_phi);
 			stat.Departure_Std.Theta = Tools::Std(Departure_theta);
+			stat.Delay_Mean = mean_Delay;// because DELAY_SPREAD is power dependant.
 			// add the std if needed
-			stat.Delay_Mean = mean_Delay;
 		}
-
+		
 		
 		return stat;
 	}
@@ -267,6 +296,8 @@ struct PATHS
 		for (auto& r : RAYS)
 			flag=flag* r.write(ofile);
 		ofile.write(reinterpret_cast<const char*>(&EXPO), sizeof(EXPOSURE));
+		ofile.write(reinterpret_cast<const char*>(&DELAY_SPREAD), sizeof(double));
+		ofile.write(reinterpret_cast<const char*>(&K_FACTOR), sizeof(double));
 		return flag * !ofile.fail();
 	}
 	bool read(std::ifstream& ifile)
@@ -290,6 +321,8 @@ struct PATHS
 			RAYS.push_back(ray);
 		}
 		ifile.read(reinterpret_cast<char*>(&EXPO), sizeof(EXPOSURE));
+		ifile.read(reinterpret_cast<char*>(&DELAY_SPREAD), sizeof(double));
+		ifile.read(reinterpret_cast<char*>(&K_FACTOR), sizeof(double));
 		return flag *!ifile.fail();
 	}
 
@@ -298,6 +331,8 @@ struct PATHS
 	std::string KEY;
 	std::vector<Ray> RAYS;
 	EXPOSURE EXPO;
+	double DELAY_SPREAD;
+	double K_FACTOR; //The ration between the Los power and the average NLOS power rays 
 };
 class Set_Line
 {
@@ -310,7 +345,9 @@ public:
 		Transmitter_Point	= t_point;
 		Receiver_Point		= r_point;
 		DirectDistance = 0;
+		RadialDistance = 0;
 		ElevationAngle = 0;
+		AzimuthAngle = 0;
 		std::stringstream converter;
 		converter << t_set<< r_set<< t_point<< r_point; converter >> this->Key;
 		Expose = NON;
@@ -322,7 +359,9 @@ public:
 		Transmitter_Point = t_point;
 		Receiver_Point = r_point;
 		DirectDistance = 0;
+		RadialDistance = 0;
 		ElevationAngle = 0;
+		AzimuthAngle = 0;
 		std::stringstream converter;
 		converter << t_set << r_set << t_point << r_point; converter >> this->Key; converter.clear();
 		std::string key1, key;
@@ -392,6 +431,42 @@ public:
 	double GetPower()
 	{
 		return this->Power.Rceiver_Average_Power();
+	}
+	void SetDelaySpread()
+	{
+		for (auto& p : this->Pathes)p.SETDELAYSPREAD();
+	}
+	void SetKFactor() // sets the K factor for each element in a point
+	{
+		double Los_Power{ 0 }, Nlos_power_sum{ 0 };
+		for (auto& p : this->Pathes)
+		{
+			if (p.EXPO == EXPOSURE::LOS)
+			{
+				if (p.RAYS.size() > 1) //has more than the LOS Ray
+				{
+					Los_Power = p.RAYS.at(0).Power;
+					if (Los_Power > 0)
+					{
+						Nlos_power_sum = 0.0;
+						for (auto& r : p.RAYS)
+						{
+							Nlos_power_sum = Nlos_power_sum + r.Power;
+						}
+						Nlos_power_sum = (Nlos_power_sum - Los_Power) / (p.RAYS.size() - 1);
+						p.K_FACTOR = Los_Power / Nlos_power_sum;
+					}
+					else
+					{
+						p.K_FACTOR = 0.0;
+					}
+				}
+				else
+					p.K_FACTOR = -1;// NON Applicabale;
+			}
+			else
+				p.K_FACTOR = 0.0;
+		}
 	}
 	EXPOSURE SetExposure()
 	{
@@ -507,7 +582,9 @@ public:
 		std::cout << " POWER AVRAG AT RX: " << this->Power.Rceiver_Average_Power() << " WATTS  " << endl;
 		std::cout << " EXPOSURE         : " << PrintExposure(Expose) << endl;
 		std::cout << " DIRECT DISTANCE  : " << this->DirectDistance << endl;
+		std::cout << " RADIAL DISTANCE  : " << this->RadialDistance << endl;
 		std::cout << " ELEVATION ANGLE  : " << this->ElevationAngle<< endl;
+		std::cout << " AZIMUTH ANGLE  : " << this->AzimuthAngle<< endl;
 		this->RxPosition.Show();
 		std::cout << " H                : "<< endl;
 		this->M.Show(RECT);
@@ -615,7 +692,9 @@ public:
 		ofile.write(reinterpret_cast<const char*>(&Transmitter_Point), sizeof(unsigned));
 		ofile.write(reinterpret_cast<const char*>(&Receiver_Point), sizeof(unsigned));
 		ofile.write(reinterpret_cast<const char*>(&DirectDistance), sizeof(float));
+		ofile.write(reinterpret_cast<const char*>(&RadialDistance), sizeof(float));
 		ofile.write(reinterpret_cast<const char*>(&ElevationAngle), sizeof(float));
+		ofile.write(reinterpret_cast<const char*>(&AzimuthAngle), sizeof(float));
 		flag = flag * M.write(ofile);
 		flag = flag * this->Q.write(ofile);
 		flag = flag * this->RxPosition.write(ofile);
@@ -644,7 +723,9 @@ public:
 		ifile.read(reinterpret_cast<char*>(&Transmitter_Point), sizeof(unsigned));
 		ifile.read(reinterpret_cast<char*>(&Receiver_Point), sizeof(unsigned));
 		ifile.read(reinterpret_cast<char*>(&DirectDistance), sizeof(float));
+		ifile.read(reinterpret_cast<char*>(&RadialDistance), sizeof(float));
 		ifile.read(reinterpret_cast<char*>(&ElevationAngle), sizeof(float));
+		ifile.read(reinterpret_cast<char*>(&AzimuthAngle), sizeof(float));
 		flag = flag * M.read(ifile);
 		flag = flag * this->Q.read(ifile);
 		flag = flag * this->RxPosition.read(ifile);
@@ -672,7 +753,9 @@ public:
 	unsigned  Transmitter_Point;
 	unsigned  Receiver_Point;
 	float DirectDistance; // Distance between the transmitter point and the receiver point
+	float RadialDistance; // The projection on th ehorizontal plan of th eline betwen th etransmitter and the receiver
 	float ElevationAngle; // angel between the horizontal plane and the line between the transmitter and the receiver points
+	float AzimuthAngle;//angle between the horizontal and the projection of the line between the transmitter and the receiver point as seen from the transmitter
 	Complex_matrix M;
 	Double_matrix Q;
 	POSITION RxPosition;
